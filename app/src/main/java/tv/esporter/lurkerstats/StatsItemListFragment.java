@@ -9,7 +9,9 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import tv.esporter.lurkerstats.service.StatsItem;
@@ -30,6 +32,9 @@ public class StatsItemListFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private StatsItemRecyclerViewAdapter mRecyclerViewAdapter;
+    private List<StatsItem> mData = null;
+    private RecyclerView mRecyclerView;
+    private ProgressBar mProgressBar;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -46,32 +51,44 @@ public class StatsItemListFragment extends Fragment {
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.stats_item_list, container, false);
 
-        // Set the adapter
-        if (view instanceof RecyclerView) {
-            Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
+        mProgressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
 
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
+        Context context = view.getContext();
 
-            mRecyclerViewAdapter = new StatsItemRecyclerViewAdapter(StatsItem.GAMES, mListener);
-            recyclerView.setAdapter(mRecyclerViewAdapter);
+        if (mColumnCount <= 1) {
+            mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
+        } else {
+            mRecyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
         }
+
+        mRecyclerViewAdapter = new StatsItemRecyclerViewAdapter(mData, mListener);
+        mRecyclerView.setAdapter(mRecyclerViewAdapter);
+        if (mData != null) dataReady();
         return view;
     }
 
+    void dataReady(){
+        mRecyclerView.setVisibility(View.VISIBLE);
+        mProgressBar.setVisibility(View.GONE);
+    }
+
     public void setData(List<StatsItem> list) {
-        mRecyclerViewAdapter.update(list);
+        if (mRecyclerViewAdapter != null) {
+            mRecyclerViewAdapter.update(list);
+            dataReady();
+        } else {
+            mData = list;
+        }
     }
 
     @Override
@@ -91,4 +108,9 @@ public class StatsItemListFragment extends Fragment {
         mListener = null;
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        mData = null;
+    }
 }

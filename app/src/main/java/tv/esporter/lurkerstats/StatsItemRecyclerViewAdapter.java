@@ -1,5 +1,7 @@
 package tv.esporter.lurkerstats;
 
+import android.content.Context;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,7 +10,13 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+
+import java.util.ArrayList;
 import java.util.List;
+
+import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
 import tv.esporter.lurkerstats.service.StatsItem;
 
@@ -18,17 +26,29 @@ import tv.esporter.lurkerstats.service.StatsItem;
  */
 public class StatsItemRecyclerViewAdapter extends RecyclerView.Adapter<StatsItemRecyclerViewAdapter.ViewHolder> {
 
-    private final List<StatsItem> mValues;
+    private final List<StatsItem> mValues = new ArrayList<>();
     private final OnStatsItemListFragmentInteractionListener mListener;
 
+    private long maxDuration = 0L;
+
     public StatsItemRecyclerViewAdapter(List<StatsItem> items, OnStatsItemListFragmentInteractionListener listener) {
-        mValues = items;
         mListener = listener;
+        if (items != null) {
+            update(items);
+        }
     }
 
     public void update(List<StatsItem> list) {
         mValues.clear();
         mValues.addAll(list);
+
+        long max = 0;
+        for(StatsItem itm : mValues){
+            if (itm.value < max) continue;
+            max = itm.value;
+        }
+        maxDuration = max;
+
         notifyDataSetChanged();
     }
 
@@ -40,20 +60,36 @@ public class StatsItemRecyclerViewAdapter extends RecyclerView.Adapter<StatsItem
     }
 
     @Override
+    public void onViewRecycled(ViewHolder holder) {
+        Glide.clear(holder.mImageView);
+        holder.mImageView.setImageDrawable(null);
+        super.onViewRecycled(holder);
+    }
+
+    @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mValues.get(position);
         holder.mTitleView.setText(mValues.get(position).title);
-        //holder.mImageView.setImageURI(mValues.get(position).image);
-        holder.mProgressView.setProgress(mValues.get(position).value);
+        Context context = holder.mImageView.getContext();
+        final float scale = context.getResources().getDisplayMetrics().density;
+        int radius = (int) (5 * scale);
+        if (mValues.get(position).image != null) {
+            Glide.with(context)
+                    .load(mValues.get(position).image)
+                    .placeholder(R.mipmap.ic_launcher)
+                    .diskCacheStrategy(DiskCacheStrategy.SOURCE)
+                    .fitCenter()
+//                    .bitmapTransform(new RoundedCornersTransformation(context, radius, 0) )
+                    .into(holder.mImageView);
+        }
+        int percent = (int) (1.0 * mValues.get(position).value.intValue()/maxDuration * holder.mProgressView.getMax());
+        holder.mProgressView.setProgress(percent);
 
-        holder.mView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null != mListener) {
-                    // Notify the active callbacks interface (the activity, if the
-                    // fragment is attached to one) that an item has been selected.
-                    mListener.onListFragmentInteraction(holder.mItem);
-                }
+        holder.mView.setOnClickListener(v -> {
+            if (null != mListener) {
+                // Notify the active callbacks interface (the activity, if the
+                // fragment is attached to one) that an item has been selected.
+                mListener.onListFragmentInteraction(holder.mItem);
             }
         });
     }

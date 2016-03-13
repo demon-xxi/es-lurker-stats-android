@@ -1,6 +1,5 @@
 package tv.esporter.lurkerstats.service;
 
-import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -16,17 +15,15 @@ public class StatsItem implements Parcelable {
 
     public final String name;
     public final String title;
-    public final Integer value;
-    public final Uri image;
-    public final String label;
+    public final Long value;
+    public final String image;
     public final Type type;
 
-    public StatsItem(Type type, String name, String title, Uri image,  Integer value, String label) {
+    public StatsItem(Type type, String name, String title, String image,  Long value) {
         this.name = name;
         this.title = title;
         this.value = value;
         this.image = image;
-        this.label = label;
         this.type = type;
     }
 
@@ -48,26 +45,24 @@ public class StatsItem implements Parcelable {
         Random rand = new Random();
         // Add some sample items.
         for (int i = 1; i <= COUNT; i++) {
-            int hrs = rand.nextInt(100);
+            long hrs = rand.nextInt(100);
             GAMES.add(new StatsItem(
                     Type.GAME,
                     String.format("Game %d", i),
                     String.format("Game %d", i),
-                    Uri.parse("http://static-cdn.jtvnw.net/ttv-boxart/Stardew%20Valley-272x380.jpg"),
-                    hrs,
-                    String.format("%d hrs", i)
+                    "http://static-cdn.jtvnw.net/ttv-boxart/Stardew%20Valley-272x380.jpg",
+                    hrs
             ));
         }
 
         for (int i = 1; i <= COUNT; i++) {
-            int hrs = rand.nextInt(100);
+            long hrs = rand.nextInt(100);
             CHANNELS.add(new StatsItem(
                     Type.CHANNEL,
                     String.format("Channel %d", i),
                     String.format("Channel %d", i),
-                    Uri.parse("http://static-cdn.jtvnw.net/jtv_user_pictures/lirik-profile_image-b3ff7b706b3de124-300x300.png"),
-                    hrs,
-                    String.format("%d hrs", i)
+                    "http://static-cdn.jtvnw.net/jtv_user_pictures/lirik-profile_image-b3ff7b706b3de124-300x300.png",
+                    hrs
             ));
         }
     }
@@ -107,17 +102,15 @@ public class StatsItem implements Parcelable {
         dest.writeString(this.name);
         dest.writeString(this.title);
         dest.writeValue(this.value);
-        dest.writeParcelable(this.image, 0);
-        dest.writeString(this.label);
+        dest.writeString(this.image);
         dest.writeInt(this.type == null ? -1 : this.type.ordinal());
     }
 
     protected StatsItem(Parcel in) {
         this.name = in.readString();
         this.title = in.readString();
-        this.value = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.image = in.readParcelable(Uri.class.getClassLoader());
-        this.label = in.readString();
+        this.value = (Long) in.readValue(Long.class.getClassLoader());
+        this.image = in.readString();
         int tmpType = in.readInt();
         this.type = tmpType == -1 ? null : Type.values()[tmpType];
     }

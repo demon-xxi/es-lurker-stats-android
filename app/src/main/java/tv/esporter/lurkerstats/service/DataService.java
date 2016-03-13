@@ -2,12 +2,25 @@ package tv.esporter.lurkerstats.service;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.content.Context;
 import android.net.Uri;
-import android.os.Bundle;
+import android.support.v4.os.ResultReceiver;
+import android.text.format.DateUtils;
+import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
+import tv.esporter.lurkerstats.api.ApiHelper;
+import tv.esporter.lurkerstats.api.ChannelStat;
+import tv.esporter.lurkerstats.api.GameStat;
+import tv.esporter.lurkerstats.api.StatsApi;
+import tv.esporter.lurkerstats.api.TwitchApi;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -19,48 +32,8 @@ public class DataService extends IntentService {
     private static final String ACTION_FETCH_USER_PROFILE = "tv.esporter.lurkerstats.action.FETCH_USER_PROFILE";
     private static final String ACTION_FETCH_STATS = "tv.esporter.lurkerstats.action.FETCH_GAMES_STATS";
 
-    private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
-    private static final String EXTRA_PERIOD = "tv.esporter.lurkerstats.extra.PERIOD";
-    private static final String EXTRA_STATS_TYPE = "tv.esporter.lurkerstats.extra.STATS_TYPE";
-    private static final String EXTRA_STATS = "tv.esporter.lurkerstats.extra.STATS";
-    private static final String EXTRA_PROFILE = "tv.esporter.lurkerstats.extra.PROFILE";
-    private static final String EXTRA_RECEIVER = "tv.esporter.lurkerstats.extra.RECEIVER";
-
     public DataService() {
         super("DataService");
-    }
-
-    /**
-     * Starts this service to perform ACTION_FETCH_GAMES_STATS or ACTION_FETCH_CHANNELS_STATS action with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    public static void startActionFetchUserStats(Context context, DataServiceReceiver mDataServiceReceiver,
-                                                 String username, String period,
-                                                 StatsItem.Type type) {
-        Intent intent = new Intent(context, DataService.class);
-        intent.setAction(ACTION_FETCH_STATS);
-        intent.putExtra(EXTRA_USERNAME, username);
-        intent.putExtra(EXTRA_PERIOD, period);
-        intent.putExtra(EXTRA_STATS_TYPE, type.toString());
-        intent.putExtra(EXTRA_RECEIVER, mDataServiceReceiver);
-        context.startService(intent);
-    }
-
-    /**
-     * Starts this service to perform ACTION_FETCH_USER_PROFILE action with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    public static void startActionFetchUserProfile(Context context, DataServiceReceiver mDataServiceReceiver,
-                                                   String username) {
-        Intent intent = new Intent(context, DataService.class);
-        intent.setAction(ACTION_FETCH_USER_PROFILE);
-        intent.putExtra(EXTRA_USERNAME, username);
-        intent.putExtra(EXTRA_RECEIVER, mDataServiceReceiver);
-        context.startService(intent);
     }
 
     @Override
@@ -68,14 +41,14 @@ public class DataService extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
 
-            final DataServiceReceiver receiver = intent.getParcelableExtra(EXTRA_RECEIVER);
+            final ResultReceiver receiver = DataServiceHelper.getIntentResultReceiver(intent);
 
             if (ACTION_FETCH_USER_PROFILE.equals(action)) {
-                handleActionFetchUserProfile(intent.getStringExtra(EXTRA_USERNAME), receiver);
+                handleActionFetchUserProfile(DataServiceHelper.getUserName(intent), receiver);
             } else if (ACTION_FETCH_STATS.equals(action)) {
-                handleActionFetchUserProfile(intent.getStringExtra(EXTRA_USERNAME),
-                        intent.getStringExtra(EXTRA_PERIOD),
-                        StatsItem.Type.valueOf(intent.getStringExtra(EXTRA_STATS_TYPE)), receiver);
+                handleActionFetchStats(DataServiceHelper.getUserName(intent),
+                        DataServiceHelper.getPeriod(intent),
+                        DataServiceHelper.getStatsType(intent), receiver);
             }
         }
     }
@@ -84,8 +57,8 @@ public class DataService extends IntentService {
      * Handle action ACTION_FETCH_USER_PROFILE
      * in the provided background thread with the provided parameters.
      */
-    private void handleActionFetchUserProfile(String username, DataServiceReceiver receiver) {
-        UserProfile profile = new UserProfile("demon_xxi",
+    private void handleActionFetchUserProfile(String username, ResultReceiver receiver) {
+        UserProfile profile = new UserProfile(username,
                 Uri.parse("https://static-cdn.jtvnw.net/jtv_user_pictures/demon_xxi-profile_image-6e334affccfca491-300x300.png"));
 
         try {
@@ -94,37 +67,72 @@ public class DataService extends IntentService {
             e.printStackTrace();
         }
 
-        receiver.replyUserProfileSuccess(username, profile);
+        DataServiceHelper.replyUserProfileSuccess(receiver, username, profile);
     }
+
+    private static final String GAME_BOX_ART_TEMPLATE  = "http://static-cdn.jtvnw.net/ttv-boxart/%s-136x190.jpg";
 
     /**
      * Handle action ACTION_FETCH_GAMES_STATS or ACTION_FETCH_CHANNELS_STATS
      * in the provided background thread with the provided parameters.
      */
-    private void handleActionFetchUserProfile(String username, String period, StatsItem.Type type, DataServiceReceiver receiver) {
+    private void handleActionFetchStats(final String username, final String period, final StatsItem.Type type, final ResultReceiver receiver) {
 
-        ArrayList<StatsItem> stats = new ArrayList<>();
 
-        Random rand = new Random();
-        // Add some sample items.
-        for (int i = 1; i <= 25; i++) {
-            int hrs = rand.nextInt(100);
-            stats.add(new StatsItem(
-                    type,
-                    String.format("%s %d", type.toString(), i),
-                    String.format("%s %d", type.toString(), i),
-                    Uri.parse("http://static-cdn.jtvnw.net/ttv-boxart/Stardew%20Valley-272x380.jpg"),
-                    hrs,
-                    String.format("%d hrs", i)
-            ));
+        StatsApi api = ApiHelper.getStatsApi();
+        TwitchApi twitch = ApiHelper.getTwitchApi();
+
+        switch (type) {
+            case GAME:
+
+                api.gamesStatsRx(username, period)
+                        .flatMap(Observable::from)
+                        .observeOn(Schedulers.newThread())
+//                              .subscribeOn(AndroidSchedulers.mainThread())
+                        .map(game ->
+                                new StatsItem(StatsItem.Type.GAME,
+                                        game.game, game.game, String.format(GAME_BOX_ART_TEMPLATE, game.game), game.duration)
+                        )
+                        .toList()
+                        .subscribe(
+                                result -> {
+                                    ArrayList<StatsItem> stats = new ArrayList<>();
+                                    stats.addAll(result);
+                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                },
+                                e -> {
+                                    Log.e("DataService", e.getMessage());
+//                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                }
+                        );
+
+                break;
+            case CHANNEL:
+
+                Observable.merge(
+                        api.channelsStatsRx(username, period)
+                                .flatMap(Observable::from)
+                                .observeOn(Schedulers.newThread())
+//                              .subscribeOn(AndroidSchedulers.mainThread())
+                                .map(chan ->
+                                        twitch.channelRx(chan.channel).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
+                                                chan.channel, tc.display_name, tc.logo, chan.duration)).single()
+                                ))
+                        .toList()
+                        .subscribe(
+                                result -> {
+                                    ArrayList<StatsItem> stats = new ArrayList<>();
+                                    stats.addAll(result);
+                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                },
+                                e -> {
+                                    Log.e("DataService", e.getMessage());
+//                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                }
+                        );
+
+                break;
         }
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        receiver.replyUserStatsSuccess(username, type, period, stats);
     }
 }

@@ -1,6 +1,7 @@
 package tv.esporter.lurkerstats;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -10,20 +11,18 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
+import android.view.View;
 
 import java.util.List;
 
-import tv.esporter.lurkerstats.service.DataService;
-import tv.esporter.lurkerstats.service.DataServiceReceiver;
+import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
 import tv.esporter.lurkerstats.service.UserProfile;
 
 public class ViewerActivity extends AppCompatActivity
-        implements OnStatsItemListFragmentInteractionListener, DataServiceReceiver.Interface {
+        implements OnStatsItemListFragmentInteractionListener, DataServiceHelper.Interface {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -39,20 +38,31 @@ public class ViewerActivity extends AppCompatActivity
      */
     private ViewPager mViewPager;
 
+    private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
+
+
     private StatsItemListFragment mGamesFragment;
     private StatsItemListFragment mChannelsFragment;
-    private DataServiceReceiver mDataServiceReceiver;
+    private DataServiceHelper mDataServiceHelper;
+    private Toolbar mToolbar;
+
+    private String mUserName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mToolbar);
 
-        toolbar.setLogo(R.drawable.lirik_profile_image);
+        if (getIntent().hasExtra(EXTRA_USERNAME)){
+            mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
+        } else {
+            mUserName = getString(R.string.default_username);
+        }
 
-        mDataServiceReceiver = new DataServiceReceiver(new Handler(), this);
+
+        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
         mChannelsFragment = new StatsItemListFragment();
         mGamesFragment = new StatsItemListFragment();
@@ -61,7 +71,7 @@ public class ViewerActivity extends AppCompatActivity
         // primary sections of the activity.
         mFragmentPagerAdapter = new StaticFragmentPagerAdapter(getSupportFragmentManager(),
                 new StatsItemListFragment[]{mChannelsFragment, mGamesFragment},
-                new String[] {"Channels", "Games"});
+                new String[]{"Channels", "Games"});
 
 
         // Set up the ViewPager with the sections adapter.
@@ -82,11 +92,14 @@ public class ViewerActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
-        DataService.startActionFetchUserStats(this, mDataServiceReceiver,
-                "demon_xxi", "currentmonth", StatsItem.Type.GAME);
+        mDataServiceHelper.startActionFetchUserProfile(this,
+                mUserName);
 
-        DataService.startActionFetchUserStats(this, mDataServiceReceiver,
-                "demon_xxi", "currentmonth", StatsItem.Type.CHANNEL);
+        mDataServiceHelper.startActionFetchUserStats(this,
+                mUserName, "currentmonth", StatsItem.Type.GAME);
+
+        mDataServiceHelper.startActionFetchUserStats(this,
+                mUserName, "currentmonth", StatsItem.Type.CHANNEL);
 
     }
 
@@ -113,7 +126,17 @@ public class ViewerActivity extends AppCompatActivity
 
     @Override
     public void onListFragmentInteraction(StatsItem item) {
-        Toast.makeText(this, item.toString(), Toast.LENGTH_SHORT).show();
+
+        switch (item.type) {
+            case GAME:
+                break;
+            case CHANNEL:
+                Intent intent = new Intent(this, ViewerActivity.class);
+                intent.putExtra(EXTRA_USERNAME, item.name);
+                startActivity(intent);
+                break;
+        }
+
     }
 
     @Override
@@ -133,6 +156,8 @@ public class ViewerActivity extends AppCompatActivity
     @Override
     public void onReceiveUserProfileResult(String username, UserProfile profile) {
         Log.i("ProfileResult", username);
+        mToolbar.setTitle(profile.name);
+        mToolbar.setSubtitle(profile.name);
     }
 
 }
