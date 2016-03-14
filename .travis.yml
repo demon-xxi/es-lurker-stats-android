@@ -2,12 +2,7 @@ language: android
 android:
   components:
     - build-tools-23.0.1
-    - add-on
-    - extra
     - extra-android-support
-  licenses:
-    - 'android-sdk-license-.+'
-    - 'google-gdk-license-.+'
 
 jdk:
   - oraclejdk8
