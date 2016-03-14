@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".StatsItemListFragment">
+    tools:context=".StatsListFragment">
 
     <ProgressBar
         android:id="@+id/progress_bar"
@@ -20,8 +20,6 @@
         android:name="tv.esporter.lurkerstats.StatsFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
         android:paddingTop="8dp"
         android:visibility="gone"
         app:layoutManager="LinearLayoutManager"

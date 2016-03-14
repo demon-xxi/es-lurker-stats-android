@@ -1,7 +1,6 @@
 package tv.esporter.lurkerstats;
 
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -41,8 +40,8 @@ public class ViewerActivity extends AppCompatActivity
     private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
 
 
-    private StatsItemListFragment mGamesFragment;
-    private StatsItemListFragment mChannelsFragment;
+    private StatsListFragment mGamesFragment;
+    private StatsListFragment mChannelsFragment;
     private DataServiceHelper mDataServiceHelper;
     private Toolbar mToolbar;
 
@@ -64,13 +63,13 @@ public class ViewerActivity extends AppCompatActivity
 
         mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
-        mChannelsFragment = new StatsItemListFragment();
-        mGamesFragment = new StatsItemListFragment();
+        mChannelsFragment = new StatsListFragment();
+        mGamesFragment = new StatsListFragment();
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mFragmentPagerAdapter = new StaticFragmentPagerAdapter(getSupportFragmentManager(),
-                new StatsItemListFragment[]{mChannelsFragment, mGamesFragment},
+                new StatsListFragment[]{mChannelsFragment, mGamesFragment},
                 new String[]{"Channels", "Games"});
 
 
@@ -78,19 +77,9 @@ public class ViewerActivity extends AppCompatActivity
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+//        fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                .setAction("Action", null).show());
 
         mDataServiceHelper.startActionFetchUserProfile(this,
                 mUserName);
@@ -100,7 +89,11 @@ public class ViewerActivity extends AppCompatActivity
 
         mDataServiceHelper.startActionFetchUserStats(this,
                 mUserName, "currentmonth", StatsItem.Type.CHANNEL);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override

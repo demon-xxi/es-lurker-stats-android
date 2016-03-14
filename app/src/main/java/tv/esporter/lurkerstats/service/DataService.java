@@ -7,6 +7,8 @@ import android.support.v4.os.ResultReceiver;
 import android.text.format.DateUtils;
 import android.util.Log;
 
+import com.snappydb.SnappydbException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +23,8 @@ import tv.esporter.lurkerstats.api.ChannelStat;
 import tv.esporter.lurkerstats.api.GameStat;
 import tv.esporter.lurkerstats.api.StatsApi;
 import tv.esporter.lurkerstats.api.TwitchApi;
+import tv.esporter.lurkerstats.api.TwitchChannel;
+import tv.esporter.lurkerstats.api.TwitchStream;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -38,6 +42,7 @@ public class DataService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+
         if (intent != null) {
             final String action = intent.getAction();
 
@@ -109,27 +114,58 @@ public class DataService extends IntentService {
                 break;
             case CHANNEL:
 
-                Observable.merge(
-                        api.channelsStatsRx(username, period)
-                                .flatMap(Observable::from)
-                                .observeOn(Schedulers.newThread())
-//                              .subscribeOn(AndroidSchedulers.mainThread())
-                                .map(chan ->
-                                        twitch.channelRx(chan.channel).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
-                                                chan.channel, tc.display_name, tc.logo, chan.duration)).single()
-                                ))
-                        .toList()
-                        .subscribe(
-                                result -> {
-                                    ArrayList<StatsItem> stats = new ArrayList<>();
-                                    stats.addAll(result);
-                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
-                                },
-                                e -> {
-                                    Log.e("DataService", e.getMessage());
-//                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
-                                }
-                        );
+                try {
+                    Cache<TwitchChannel> channelCache = new Cache<>(getCacheDir().getAbsolutePath(), TwitchChannel.class);
+
+                    Observable.merge(
+                            api.channelsStatsRx(username, period)
+                                    .flatMap(Observable::from)
+                                    .observeOn(Schedulers.newThread())
+    //                              .subscribeOn(AndroidSchedulers.mainThread())
+                                    .map(chan -> {
+                                            TwitchChannel stream = null;
+                                            try {
+                                                stream = channelCache.get(chan.channel);
+                                            } catch (SnappydbException e) {
+//                                                e.printStackTrace();
+                                            }
+
+                                        if (stream == null){
+                                            Log.i("DataService", "FETCHING: " + chan.channel);
+                                            return  twitch.channelRx(chan.channel).map(tc -> {
+                                                try {
+                                                    channelCache.put(chan.channel, tc);
+                                                } catch (SnappydbException e) {
+                                                    e.printStackTrace();
+                                                }
+                                                return new StatsItem(StatsItem.Type.CHANNEL,
+                                                        chan.channel, tc.display_name, tc.logo, chan.duration);
+                                            }).single();
+                                        } else {
+                                            Log.i("DataService", "CACHED: " + stream.name);
+                                            return  Observable.just(stream).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
+                                                    chan.channel, tc.display_name, tc.logo, chan.duration)).single();
+                                        }
+                                    }
+                                    ))
+                            .toList()
+                            .subscribe(
+                                    result -> {
+                                        ArrayList<StatsItem> stats = new ArrayList<>();
+                                        stats.addAll(result);
+                                        DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                    },
+                                    e -> {
+                                        e.printStackTrace();
+                                        Log.e("DataService", e.getMessage());
+    //                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+                                    }
+                            );
+
+                } catch (SnappydbException e) {
+                    e.printStackTrace();
+                    Log.e("DataService", e.getMessage());
+                }
 
                 break;
         }

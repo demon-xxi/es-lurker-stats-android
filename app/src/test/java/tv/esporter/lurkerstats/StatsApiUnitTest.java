@@ -71,7 +71,7 @@ public class StatsApiUnitTest {
 //                .subscribeOn(scheduler)
                 .map(chan ->
                     tapi.channelRx(chan.channel).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
-                                chan.channel, tc.display_name, tc.logo, chan.duration, "")).single()
+                                chan.channel, tc.display_name, tc.logo, chan.duration)).single()
                 ))
                 .map(result -> moshi.adapter(StatsItem.class).toJson(result))
                 .toBlocking()
