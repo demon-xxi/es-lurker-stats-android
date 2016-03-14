@@ -6,6 +6,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -199,20 +200,22 @@ public class StatsListFragment extends Fragment {
             StatsItem current = mValues.get(position);
             holder.mItem = current;
             holder.mTitleView.setText(current.title);
+            String label = DateUtils.formatElapsedTime(current.value);
+            holder.mLabelView.setText(label);
     //        Context context = holder.mImageView.getContext();
     //        final float scale = context.getResources().getDisplayMetrics().density;
     //        int radius = (int) (5 * scale);
             holder.mImageView.setImageDrawable(null);
-            if (mValues.get(position).image != null) {
-//                Glide.with(context)
-//                        .load(mValues.get(position).image)
-//                        .placeholder(R.mipmap.ic_launcher)
-//                        .diskCacheStrategy(DiskCacheStrategy.SOURCE)
-//    //                    .fitCenter()
-//    //                    .bitmapTransform(new RoundedCornersTransformation(context, radius, 0) )
-//                        .into(holder.mImageView);
+            if (current.image != null && !current.image.isEmpty()) {
                 Picasso.with(StatsListFragment.this.getContext())
                         .load(current.image)
+                        .placeholder(R.drawable.noavatar)
+                        .fit()
+                        .centerInside()
+                        .into(holder.mImageView);
+            } else  {
+                Picasso.with(StatsListFragment.this.getContext())
+                        .load(R.drawable.noavatar)
                         .fit()
                         .centerInside()
                         .into(holder.mImageView);
@@ -237,6 +240,7 @@ public class StatsListFragment extends Fragment {
         public class ViewHolder extends RecyclerView.ViewHolder {
             public final View mView;
             public final TextView mTitleView;
+            public final TextView mLabelView;
             public final ProgressBar mProgressView;
             public final ImageView mImageView;
             public StatsItem mItem;
@@ -246,8 +250,8 @@ public class StatsListFragment extends Fragment {
                 mView = view;
                 mImageView = (ImageView) view.findViewById(R.id.stats_list_item_image);
                 mTitleView = (TextView) view.findViewById(R.id.stats_list_item_title);
+                mLabelView = (TextView) view.findViewById(R.id.stats_list_item_label);
                 mProgressView = (ProgressBar) view.findViewById(R.id.stats_list_item_progress);
-
             }
 
             @Override

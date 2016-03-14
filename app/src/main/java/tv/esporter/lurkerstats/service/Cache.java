@@ -38,6 +38,8 @@ public class Cache<T> {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        db.close();
+        if (db != null && db.isOpen()){
+            db.close();
+        }
     }
 }
