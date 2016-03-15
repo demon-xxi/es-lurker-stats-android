@@ -7,6 +7,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -155,6 +156,8 @@ public class StatsListFragment extends Fragment {
      */
     private class StatsRecyclerViewAdapter extends RecyclerView.Adapter<StatsRecyclerViewAdapter.ViewHolder> {
 
+        private int mBackground;
+        private final TypedValue mTypedValue = new TypedValue();
         private final List<StatsItem> mValues = new ArrayList<>();
         private final OnStatsItemListFragmentInteractionListener mListener;
 
@@ -165,6 +168,9 @@ public class StatsListFragment extends Fragment {
             if (items != null) {
                 update(items);
             }
+
+            StatsListFragment.this.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, mTypedValue, true);
+            mBackground = mTypedValue.resourceId;
         }
 
         public void update(List<StatsItem> list) {
@@ -185,6 +191,7 @@ public class StatsListFragment extends Fragment {
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.stats_list_item, parent, false);
+            view.setBackgroundResource(mBackground);
             return new ViewHolder(view);
         }
 

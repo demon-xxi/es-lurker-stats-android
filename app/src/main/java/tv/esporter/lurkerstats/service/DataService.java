@@ -4,27 +4,18 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.os.ResultReceiver;
-import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.snappydb.SnappydbException;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import rx.Observable;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import tv.esporter.lurkerstats.api.ApiHelper;
-import tv.esporter.lurkerstats.api.ChannelStat;
-import tv.esporter.lurkerstats.api.GameStat;
 import tv.esporter.lurkerstats.api.StatsApi;
 import tv.esporter.lurkerstats.api.TwitchApi;
 import tv.esporter.lurkerstats.api.TwitchChannel;
-import tv.esporter.lurkerstats.api.TwitchStream;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -63,6 +54,9 @@ public class DataService extends IntentService {
      * in the provided background thread with the provided parameters.
      */
     private void handleActionFetchUserProfile(String username, ResultReceiver receiver) {
+
+        TwitchApi twitch = ApiHelper.getTwitchApi();
+
         UserProfile profile = new UserProfile(username,
                 Uri.parse("https://static-cdn.jtvnw.net/jtv_user_pictures/demon_xxi-profile_image-6e334affccfca491-300x300.png"));
 
@@ -131,7 +125,7 @@ public class DataService extends IntentService {
                                             }
 
                                         if (stream == null){
-                                            Log.i("DataService", "FETCHING: " + chan.channel);
+//                                            Log.v("DataService", "FETCHING: " + chan.channel);
                                             return  twitch.channelRx(chan.channel).map(tc -> {
                                                 try {
                                                     channelCache.put(chan.channel, tc);
@@ -142,7 +136,7 @@ public class DataService extends IntentService {
                                                         chan.channel, tc.display_name, tc.logo, chan.duration);
                                             }).single();
                                         } else {
-                                            Log.i("DataService", "CACHED: " + stream.name);
+//                                            Log.v("DataService", "CACHED: " + stream.name);
                                             return  Observable.just(stream).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
                                                     chan.channel, tc.display_name, tc.logo, chan.duration)).single();
                                         }

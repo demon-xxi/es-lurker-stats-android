@@ -5,8 +5,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -60,6 +62,9 @@ public class ViewerActivity extends AppCompatActivity
             mUserName = getString(R.string.default_username);
         }
 
+        final ActionBar ab = getSupportActionBar();
+//        ab.setHomeAsUpIndicator(R.drawable.ic_menu);
+        ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
 
         mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
@@ -76,6 +81,9 @@ public class ViewerActivity extends AppCompatActivity
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mFragmentPagerAdapter);
+
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(mViewPager);
 
 //        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 //        fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
@@ -148,9 +156,10 @@ public class ViewerActivity extends AppCompatActivity
 
     @Override
     public void onReceiveUserProfileResult(String username, UserProfile profile) {
-        Log.i("ProfileResult", username);
+        Log.d("ProfileResult", username);
         mToolbar.setTitle(profile.name);
-        mToolbar.setSubtitle(profile.name);
+//        mToolbar.setLogo();
+//        mToolbar.setSubtitle(profile.name);
     }
 
 }
