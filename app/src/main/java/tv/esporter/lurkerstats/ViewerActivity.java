@@ -62,10 +62,16 @@ public class ViewerActivity extends AppCompatActivity
             mUserName = getString(R.string.default_username);
         }
 
+
         final ActionBar ab = getSupportActionBar();
-//        ab.setHomeAsUpIndicator(R.drawable.ic_menu);
-        ab.setDisplayShowHomeEnabled(true);
-        ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
+        if (ab != null){
+            ab.setDisplayShowHomeEnabled(true);
+            ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
+            ab.setTitle(mUserName);
+        }
+
+        mToolbar.setTitle(mUserName);
+
 
         mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
@@ -161,7 +167,7 @@ public class ViewerActivity extends AppCompatActivity
     @Override
     public void onReceiveUserProfileResult(String username, UserProfile profile) {
         Log.d("ProfileResult", username);
-        mToolbar.setTitle(profile.name);
+//        mToolbar.setTitle(profile.name);
 //        mToolbar.setLogo();
 //        mToolbar.setSubtitle(profile.name);
     }
