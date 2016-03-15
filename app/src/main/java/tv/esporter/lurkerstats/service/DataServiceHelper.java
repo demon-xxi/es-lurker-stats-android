@@ -25,12 +25,14 @@ public class DataServiceHelper {
     private static final String ACTION_FETCH_USER_PROFILE = "tv.esporter.lurkerstats.action.FETCH_USER_PROFILE";
     private static final String ACTION_FETCH_STATS = "tv.esporter.lurkerstats.action.FETCH_GAMES_STATS";
 
-    private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
-    private static final String EXTRA_PERIOD = "tv.esporter.lurkerstats.extra.PERIOD";
-    private static final String EXTRA_STATS_TYPE = "tv.esporter.lurkerstats.extra.STATS_TYPE";
-    private static final String EXTRA_STATS = "tv.esporter.lurkerstats.extra.STATS";
-    private static final String EXTRA_PROFILE = "tv.esporter.lurkerstats.extra.PROFILE";
-    private static final String EXTRA_RECEIVER = "tv.esporter.lurkerstats.extra.RECEIVER";
+    public static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
+    public static final String EXTRA_PERIOD = "tv.esporter.lurkerstats.extra.PERIOD";
+    public static final String EXTRA_STATS_TYPE = "tv.esporter.lurkerstats.extra.STATS_TYPE";
+    public static final String EXTRA_STATS = "tv.esporter.lurkerstats.extra.STATS";
+    public static final String EXTRA_PROFILE = "tv.esporter.lurkerstats.extra.PROFILE";
+    public static final String EXTRA_RECEIVER = "tv.esporter.lurkerstats.extra.RECEIVER";
+
+    public static final String EVENT_STATS_UPDATED = "tv.esporter.lurkerstats.action.EVENT_STATS_UPDATED";
 
     /**
      * Create a new ResultReceive to receive results.  Your

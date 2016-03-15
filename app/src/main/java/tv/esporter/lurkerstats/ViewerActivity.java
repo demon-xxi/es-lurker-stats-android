@@ -106,10 +106,23 @@ public class ViewerActivity extends AppCompatActivity
                 mUserName, "currentmonth", StatsItem.Type.CHANNEL);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
+//    @Override
+//    protected void onPause() {
+//        // Unregister since the activity is paused.
+//        LocalBroadcastManager.getInstance(this).unregisterReceiver(
+//                mMessageReceiver);
+//        super.onPause();
+//    }
+//
+//    @Override
+//    protected void onResume() {
+//        // Register to receive messages.
+//        // We are registering an observer (mMessageReceiver) to receive Intents
+//        // with actions named "custom-event-name".
+//        LocalBroadcastManager.getInstance(this).registerReceiver(
+//                mMessageReceiver, new IntentFilter("custom-event-name"));
+//        super.onResume();
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
