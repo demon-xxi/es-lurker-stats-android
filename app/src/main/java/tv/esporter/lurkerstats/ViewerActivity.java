@@ -21,7 +21,9 @@ import com.snappydb.SnappyDB;
 import com.snappydb.SnappydbException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.supercharge.rxsnappy.RxSnappyClient;
 import io.supercharge.rxsnappy.exception.CacheExpiredException;
@@ -31,8 +33,7 @@ import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
 import tv.esporter.lurkerstats.util.Build;
 
-public class ViewerActivity extends AppCompatActivity
-        implements OnStatsItemListFragmentInteractionListener, DataServiceHelper.Interface {
+public class ViewerActivity extends AppCompatActivity {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -51,8 +52,8 @@ public class ViewerActivity extends AppCompatActivity
     private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
 
 
-    private StatsListFragment mGamesFragment;
-    private StatsListFragment mChannelsFragment;
+//    private StatsListFragment mGamesFragment;
+//    private StatsListFragment mChannelsFragment;
 //    private DataServiceHelper mDataServiceHelper;
     private ActionBar ab;
     private String mUserName;
@@ -63,8 +64,13 @@ public class ViewerActivity extends AppCompatActivity
     private static final String PERIOD  = "currentmonth";
     private RxSnappyClient cache;
 
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+//        Log.v(">>>> ViewerActivity", "onCreate");
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -85,19 +91,28 @@ public class ViewerActivity extends AppCompatActivity
         }
 
 //        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
-        mChannelsFragment = new StatsListFragment();
-        mGamesFragment = new StatsListFragment();
+
+        Bundle channelsBundle = new Bundle();
+        channelsBundle.putSerializable(DataServiceHelper.EXTRA_STATS_TYPE, StatsItem.Type.CHANNEL);
+        Bundle gamesBundle = new Bundle();
+        gamesBundle.putSerializable(DataServiceHelper.EXTRA_STATS_TYPE, StatsItem.Type.GAME);
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mFragmentPagerAdapter = new StaticFragmentPagerAdapter(getSupportFragmentManager(),
-                new StatsListFragment[]{mChannelsFragment, mGamesFragment},
-                new String[]{"Channels", "Games"});
+                this,
+                new Class[]{StatsListFragment.class, StatsListFragment.class},
+                new String[]{"Channels", "Games"}, new Bundle[]{channelsBundle, gamesBundle});
 
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mFragmentPagerAdapter);
+
+        // hack way to get references to fragments
+//        mChannelsFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 0);
+//        mGamesFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 1);
+
 
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
@@ -118,10 +133,16 @@ public class ViewerActivity extends AppCompatActivity
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, filter);
 
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
         loadUserProfile();
         loadStats(StatsItem.Type.CHANNEL, PERIOD);
         loadStats(StatsItem.Type.GAME, PERIOD);
-
     }
 
     // Our handler for received Intents.
@@ -178,14 +199,8 @@ public class ViewerActivity extends AppCompatActivity
     }
 
     private void setStats(List<StatsItem> statsItems, StatsItem.Type type) {
-        switch (type) {
-            case GAME:
-                mGamesFragment.setData(statsItems);
-                break;
-            case CHANNEL:
-                mChannelsFragment.setData(statsItems);
-                break;
-        }
+        StatsListFragment sub = dataSubscribers.get(type);
+        if (sub != null) sub.setData(statsItems);
     }
 
     private void loadUserProfile() {
@@ -256,7 +271,7 @@ public class ViewerActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
+
     public void onListFragmentInteraction(StatsItem item) {
 
         switch (item.type) {
@@ -271,17 +286,31 @@ public class ViewerActivity extends AppCompatActivity
 
     }
 
-    @Override
-    public void onReceiveUserStatsResult(String username, StatsItem.Type type,
-                                         String period, List<StatsItem> stats) {
-        Log.i("UserStatsResult", username);
-        switch (type) {
-            case GAME:
-                mGamesFragment.setData(stats);
-                break;
-            case CHANNEL:
-                mChannelsFragment.setData(stats);
-                break;
+//    @Override
+//    public void onReceiveUserStatsResult(String username, StatsItem.Type type,
+//                                         String period, List<StatsItem> stats) {
+//        Log.i("UserStatsResult", username);
+//        switch (type) {
+//            case GAME:
+//                mGamesFragment.setData(stats);
+//                break;
+//            case CHANNEL:
+//                mChannelsFragment.setData(stats);
+//                break;
+//        }
+//    }
+
+
+    private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
+    public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
+        dataSubscribers.put(type, statsListFragment);
+    }
+
+    public void unSubscibeForData(StatsListFragment statsListFragment) {
+        for (Map.Entry e: dataSubscribers.entrySet()){
+            if (e.getValue() != statsListFragment) continue;
+            dataSubscribers.remove(e.getKey());
+            break;
         }
     }
 

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.snappydb.DB;
 import com.snappydb.SnappyDB;
 import com.snappydb.SnappydbException;
 
@@ -136,34 +135,31 @@ public class DataService extends IntentService {
                         );
                 break;
             case CHANNEL:
-                    statsStream =
+                    statsStream =   Observable.merge(
                             api.channelsStatsRx(username, period)
                                     .flatMap(Observable::from)
                                     .observeOn(Schedulers.newThread())
-                                    .map(chan -> {
+                                    .map(chan ->
 
-                                        TwitchChannel stream = cache.getObject(
+                                        cache.getObject(
                                                 Build.key(TwitchChannel.class.getSimpleName(), chan.channel),
                                                 DataServiceHelper.EXTRA_LONG_TTL,
                                                 TwitchChannel.class
                                         )
-                                                .onErrorResumeNext(
-                                                        twitch.channelRx(chan.channel)
-                                                        .doOnNext(twitchChannel -> {
-                                                            cache.setObject(Build.key(
-                                                                    TwitchChannel.class.getSimpleName(),
-                                                                    chan.channel
-                                                            ), twitchChannel).toBlocking().first();
-                                                        })
+                                        .onErrorResumeNext(
+                                                twitch.channelRx(chan.channel)
+                                                        .observeOn(Schedulers.newThread())
+                                                .doOnNext(twitchChannel ->
+                                                    cache.setObject(Build.key(
+                                                            TwitchChannel.class.getSimpleName(),
+                                                            chan.channel
+                                                    ), twitchChannel).toBlocking().first()
                                                 )
-                                                .toBlocking().first();
+                                        )
+                                        .single().map(twitchChannel -> new StatsItem(StatsItem.Type.CHANNEL,
+                                                chan.channel, twitchChannel.display_name, twitchChannel.logo, chan.duration))
 
-
-                                        return new StatsItem(StatsItem.Type.CHANNEL,
-                                                chan.channel, stream.display_name, stream.logo, chan.duration);
-
-                                    }
-                                    );
+                                    ));
                 break;
             default:
                 // ensure statsStream != null

@@ -143,8 +143,8 @@ public class DataServiceHelper {
     }
 
     public interface Interface {
-        void onReceiveUserStatsResult(String username, StatsItem.Type type,
-                                      String period, List<StatsItem> stats);
+//        void onReceiveUserStatsResult(String username, StatsItem.Type type,
+//                                      String period, List<StatsItem> stats);
 //        void onReceiveUserProfileResult(String username, UserProfile profile);
     }
 

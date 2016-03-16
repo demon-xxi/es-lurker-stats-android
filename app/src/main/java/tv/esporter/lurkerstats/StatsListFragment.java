@@ -20,6 +20,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
+import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
 
 
@@ -31,7 +32,8 @@ import tv.esporter.lurkerstats.service.StatsItem;
  */
 public class StatsListFragment extends Fragment {
 
-    private OnStatsItemListFragmentInteractionListener mListener;
+//    private final int count;
+    private ViewerActivity mActivity;
 
     private static final String ARG_COLUMN_COUNT = "column-count";
     private static final String STATE_POSITION_INDEX = "state_position_index";
@@ -44,6 +46,8 @@ public class StatsListFragment extends Fragment {
     private ProgressBar mProgressBar;
     private RecyclerView.LayoutManager mLayoutManager;
 
+//    static int CNT = 1;
+
 //    private ViewPreloadSizeProvider<StatsItem> preloadSizeProvider;
 
 
@@ -52,23 +56,33 @@ public class StatsListFragment extends Fragment {
      * fragment (e.g. upon screen orientation changes).
      */
     public StatsListFragment() {
+//        this.count = CNT++;
     }
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+//        Log.v(">>>> StatsListFragment", "onCreate " + count);
         super.onCreate(savedInstanceState);
 
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
 
+
+        if (getArguments() != null && getArguments().containsKey(DataServiceHelper.EXTRA_STATS_TYPE)){
+            mActivity.subscibeForData(
+                    (StatsItem.Type)getArguments().getSerializable(DataServiceHelper.EXTRA_STATS_TYPE),
+                    this);
+        }
+
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
+//        Log.v(">>>> StatsListFragment", "onCreateView " + count);
         View view = inflater.inflate(R.layout.stats_list, container, false);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
@@ -81,7 +95,7 @@ public class StatsListFragment extends Fragment {
                 : new LinearLayoutManager(context);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mRecyclerViewAdapter = new StatsRecyclerViewAdapter(mData, mListener);
+        mRecyclerViewAdapter = new StatsRecyclerViewAdapter(mData, mActivity);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
 
         if (mData != null) setData(mData);
@@ -94,11 +108,6 @@ public class StatsListFragment extends Fragment {
         }
 
         return view;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
     }
 
     void dataReady(){
@@ -117,9 +126,10 @@ public class StatsListFragment extends Fragment {
 
     @Override
     public void onAttach(Context context) {
+//        Log.v(">>>> StatsListFragment", "onAttach " + count);
         super.onAttach(context);
-        if (context instanceof OnStatsItemListFragmentInteractionListener) {
-            mListener = (OnStatsItemListFragmentInteractionListener) context;
+        if (context instanceof ViewerActivity) {
+            mActivity = (ViewerActivity) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnStatsItemListFragmentInteractionListener");
@@ -128,18 +138,22 @@ public class StatsListFragment extends Fragment {
 
     @Override
     public void onDetach() {
+//        Log.v(">>>> StatsListFragment", "onDetach " + count);
         super.onDetach();
-        mListener = null;
+        mActivity.unSubscibeForData(this);
+        mActivity = null;
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        mData = null;
-    }
+//    @Override
+//    public void onPause() {
+//        Log.v(">>>> StatsListFragment", "onPause " + count);
+//        super.onPause();
+//        mData = null;
+//    }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+//        Log.v(">>>> StatsListFragment", "onSaveInstanceState " + count).;
         super.onSaveInstanceState(outState);
         if (mRecyclerView != null && mLayoutManager instanceof LinearLayoutManager) {
             int index = ((LinearLayoutManager) mLayoutManager).findFirstVisibleItemPosition();
@@ -159,11 +173,11 @@ public class StatsListFragment extends Fragment {
         private int mBackground;
         private final TypedValue mTypedValue = new TypedValue();
         private final List<StatsItem> mValues = new ArrayList<>();
-        private final OnStatsItemListFragmentInteractionListener mListener;
+        private final ViewerActivity mListener;
 
         private long maxDuration = 0L;
 
-        public StatsRecyclerViewAdapter(List<StatsItem> items, OnStatsItemListFragmentInteractionListener listener) {
+        public StatsRecyclerViewAdapter(List<StatsItem> items, ViewerActivity listener) {
             mListener = listener;
             if (items != null) {
                 update(items);

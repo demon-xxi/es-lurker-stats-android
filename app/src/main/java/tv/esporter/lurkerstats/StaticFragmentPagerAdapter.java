@@ -1,5 +1,7 @@
 package tv.esporter.lurkerstats;
 
+import android.content.Context;
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -10,36 +12,36 @@ import java.util.List;
 
 public class StaticFragmentPagerAdapter extends FragmentPagerAdapter {
 
-    ArrayList<Fragment> mFragments = new ArrayList<>();
-    ArrayList<String> mTitles = new ArrayList<>();
 
-    public StaticFragmentPagerAdapter(FragmentManager fm,
-                                      Fragment[] fragments, String[] titles) {
-        this(fm, Arrays.asList(fragments), Arrays.asList(titles));
-    }
+    private Context mContext;
+    private Class[] mFragmentTypes;
+    private String[] mTitles;
+    private Bundle[] mArguments;
 
+    public StaticFragmentPagerAdapter(FragmentManager fm, Context context,
+                                      Class[] fragmentTypes, String[] titles, Bundle[] arguments) {
 
-    public StaticFragmentPagerAdapter(FragmentManager fm,
-                                      List<Fragment> fragments, List<String> titles) {
         super(fm);
-        mFragments.addAll(fragments);
-        mTitles.addAll(titles);
+        mContext = context;
+        mFragmentTypes = fragmentTypes;
+        mTitles = titles;
+        mArguments = arguments;
     }
 
     @Override
     public Fragment getItem(int position) {
-        if (position >= mFragments.size()) return null;
-        return mFragments.get(position);
+        if (position >= mFragmentTypes.length) return null;
+        return Fragment.instantiate(mContext, mFragmentTypes[position].getName(), mArguments[position]);
     }
 
     @Override
     public int getCount() {
-        return mFragments.size();
+        return mFragmentTypes.length;
     }
 
     @Override
     public CharSequence getPageTitle(int position) {
-        if (position >= mTitles.size()) return null;
-        return mTitles.get(position);
+        if (position >= mTitles.length) return null;
+        return mTitles[position];
     }
 }
