@@ -131,7 +131,8 @@ public class DataService extends IntentService {
 //                              .subscribeOn(AndroidSchedulers.mainThread())
                         .map(game ->
                                 new StatsItem(StatsItem.Type.GAME,
-                                        game.game, game.game, String.format(GAME_BOX_ART_TEMPLATE, game.game), game.duration)
+                                        game.game, game.game, String.format(GAME_BOX_ART_TEMPLATE,
+                                        game.getSafeName()), game.duration)
                         );
                 break;
             case CHANNEL:
