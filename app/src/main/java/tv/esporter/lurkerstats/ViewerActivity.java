@@ -1,12 +1,14 @@
 package tv.esporter.lurkerstats;
 
+import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,16 +16,25 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.Toast;
 
+import com.snappydb.SnappyDB;
+import com.snappydb.SnappydbException;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import io.supercharge.rxsnappy.RxSnappyClient;
+import io.supercharge.rxsnappy.exception.CacheExpiredException;
+import io.supercharge.rxsnappy.exception.MissingDataException;
+import tv.esporter.lurkerstats.api.TwitchChannel;
 import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
-import tv.esporter.lurkerstats.service.UserProfile;
+import tv.esporter.lurkerstats.util.Build;
 
-public class ViewerActivity extends AppCompatActivity
-        implements OnStatsItemListFragmentInteractionListener, DataServiceHelper.Interface {
+public class ViewerActivity extends AppCompatActivity {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -42,74 +53,209 @@ public class ViewerActivity extends AppCompatActivity
     private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
 
 
-    private StatsListFragment mGamesFragment;
-    private StatsListFragment mChannelsFragment;
-    private DataServiceHelper mDataServiceHelper;
-    private Toolbar mToolbar;
-
+//    private StatsListFragment mGamesFragment;
+//    private StatsListFragment mChannelsFragment;
+//    private DataServiceHelper mDataServiceHelper;
+    private ActionBar ab;
     private String mUserName;
+
+//    Cache<TwitchChannel> channelCache;
+//    Cache<ArrayList<StatsItem>> statsCache;
+
+    private static final String PERIOD  = "currentmonth";
+    private RxSnappyClient cache;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_viewer);
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(mToolbar);
+        Log.d(">>>> ViewerActivity", "onCreate");
 
+        // do these before restoring savedInstanceState
         if (getIntent().hasExtra(EXTRA_USERNAME)){
             mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
         } else {
             mUserName = getString(R.string.default_username);
         }
+        try {
+            cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
+        } catch (SnappydbException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e("ViewerActivity", "Error during cache initialization", e);
+            finish();
+        }
 
 
-        final ActionBar ab = getSupportActionBar();
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_viewer);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        ab = getSupportActionBar();
         if (ab != null){
             ab.setDisplayShowHomeEnabled(true);
             ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
             ab.setTitle(mUserName);
         }
 
-        mToolbar.setTitle(mUserName);
+//        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
-
-        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
-
-        mChannelsFragment = new StatsListFragment();
-        mGamesFragment = new StatsListFragment();
+        Bundle channelsBundle = new Bundle();
+        channelsBundle.putSerializable(DataServiceHelper.EXTRA_STATS_TYPE, StatsItem.Type.CHANNEL);
+        Bundle gamesBundle = new Bundle();
+        gamesBundle.putSerializable(DataServiceHelper.EXTRA_STATS_TYPE, StatsItem.Type.GAME);
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mFragmentPagerAdapter = new StaticFragmentPagerAdapter(getSupportFragmentManager(),
-                new StatsListFragment[]{mChannelsFragment, mGamesFragment},
-                new String[]{"Channels", "Games"});
+                this,
+                new Class[]{StatsListFragment.class, StatsListFragment.class},
+                new String[]{"Channels", "Games"}, new Bundle[]{channelsBundle, gamesBundle});
 
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
+        // hack way to get references to fragments
+//        mChannelsFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 0);
+//        mGamesFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 1);
+
+
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show());
 
-        mDataServiceHelper.startActionFetchUserProfile(this,
-                mUserName);
 
-        mDataServiceHelper.startActionFetchUserStats(this,
-                mUserName, "currentmonth", StatsItem.Type.GAME);
+        IntentFilter filter = new IntentFilter(DataServiceHelper.EVENT_PROFILE_UPDATED);
+        filter.addAction(DataServiceHelper.EVENT_STATS_UPDATED);
 
-        mDataServiceHelper.startActionFetchUserStats(this,
-                mUserName, "currentmonth", StatsItem.Type.CHANNEL);
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mMessageReceiver, filter);
+
     }
+
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        Log.d(">>>> ViewerActivity", "onStart");
+        super.onStart();
+
+        loadUserProfile();
     }
+
+
+//    @Override
+//    protected void onPostResume() {
+//        Log.d(">>>> ViewerActivity", "onPostResume");
+//        super.onPostResume();
+//        loadUserProfile();
+//        loadStats(StatsItem.Type.CHANNEL, PERIOD);
+//        loadStats(StatsItem.Type.GAME, PERIOD);
+//    }
+
+    // Our handler for received Intents.
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            switch (intent.getAction()){
+                case DataServiceHelper.EVENT_PROFILE_UPDATED:
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
+                    loadUserProfile();
+                    break;
+                case DataServiceHelper.EVENT_STATS_UPDATED:
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
+                    loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
+                            PERIOD);
+                    break;
+            }
+
+
+            // TODO Auto-generated method stub
+            // Get extra data included in the Intent
+            String message = intent.getStringExtra("message");
+            Log.d("receiver", "Got message: " + message);
+        }
+    };
+
+    private void loadStats(StatsItem.Type type, String period) {
+        String key = Build.key(mUserName, type, period);
+
+        try {
+            // try getting fresh data first
+        ArrayList<StatsItem> stats =
+                cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                        DataServiceHelper.SHORT_TTL,
+                new ArrayList<StatsItem>().getClass()).toBlocking().first();
+            Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
+            setStats(stats, type);
+            return;
+        } catch (CacheExpiredException | MissingDataException e) {
+            // get any data
+            try{
+                ArrayList<StatsItem> stats =
+                        cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                setStats(stats, type);
+            } catch (MissingDataException e2){
+                // ignoring
+            }
+        }
+
+        // request fresh data
+        DataServiceHelper.startActionFetchUserStats(this, mUserName, period, type);
+    }
+
+    private void setStats(List<StatsItem> statsItems, StatsItem.Type type) {
+        Log.d("ViewerActivity", "setStats " + type);
+        StatsListFragment sub = dataSubscribers.get(type);
+        if (sub != null) sub.setData(statsItems);
+    }
+
+    private void loadUserProfile() {
+        try {
+            TwitchChannel profile = cache.getObject(Build.key(TwitchChannel.class.getSimpleName(), mUserName),
+                    DataServiceHelper.LONG_TTL,
+                    TwitchChannel.class).toBlocking().first();
+
+            setProfile(profile);
+            return;
+        } catch (CacheExpiredException | MissingDataException e1) {
+            try {
+                TwitchChannel profile = cache.getObject(Build.key(TwitchChannel.class.getSimpleName(), mUserName),
+                        TwitchChannel.class).toBlocking().first();
+                setProfile(profile);
+            } catch (MissingDataException e2){
+                // ignoring
+            }
+        }
+        // request profile update
+        DataServiceHelper.startActionFetchUserProfile(this, mUserName);
+    }
+
+    private void setProfile(TwitchChannel channel) {
+        if (ab != null) ab.setTitle(channel.display_name);
+    }
+
+
+//    @Override
+//    protected void onPause() {
+//        // Unregister since the activity is paused.
+//        LocalBroadcastManager.getInstance(this).unregisterReceiver(
+//                mMessageReceiver);
+//        super.onPause();
+//    }
+//
+//    @Override
+//    protected void onResume() {
+//        // Register to receive messages.
+//        // We are registering an observer (mMessageReceiver) to receive Intents
+//        // with actions named "custom-event-name".
+//        LocalBroadcastManager.getInstance(this).registerReceiver(
+//                mMessageReceiver, new IntentFilter("custom-event-name"));
+//        super.onResume();
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -135,7 +281,7 @@ public class ViewerActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
+
     public void onListFragmentInteraction(StatsItem item) {
 
         switch (item.type) {
@@ -150,26 +296,41 @@ public class ViewerActivity extends AppCompatActivity
 
     }
 
-    @Override
-    public void onReceiveUserStatsResult(String username, StatsItem.Type type,
-                                         String period, List<StatsItem> stats) {
-        Log.i("UserStatsResult", username);
-        switch (type) {
-            case GAME:
-                mGamesFragment.setData(stats);
-                break;
-            case CHANNEL:
-                mChannelsFragment.setData(stats);
-                break;
+//    @Override
+//    public void onReceiveUserStatsResult(String username, StatsItem.Type type,
+//                                         String period, List<StatsItem> stats) {
+//        Log.i("UserStatsResult", username);
+//        switch (type) {
+//            case GAME:
+//                mGamesFragment.setData(stats);
+//                break;
+//            case CHANNEL:
+//                mChannelsFragment.setData(stats);
+//                break;
+//        }
+//    }
+
+
+    private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
+    public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
+        dataSubscribers.put(type, statsListFragment);
+        loadStats(type, PERIOD);
+    }
+
+    public void unSubscibeForData(StatsListFragment statsListFragment) {
+        for (Map.Entry e: dataSubscribers.entrySet()){
+            if (e.getValue() != statsListFragment) continue;
+            dataSubscribers.remove(e.getKey());
+            break;
         }
     }
 
-    @Override
-    public void onReceiveUserProfileResult(String username, UserProfile profile) {
-        Log.d("ProfileResult", username);
-//        mToolbar.setTitle(profile.name);
-//        mToolbar.setLogo();
-//        mToolbar.setSubtitle(profile.name);
-    }
+//    @Override
+//    public void onReceiveUserProfileResult(String usernamee) {
+//        Log.d("ProfileResult", username);
+////        mToolbar.setTitle(profile.name);
+////        mToolbar.setLogo();
+////        mToolbar.setSubtitle(profile.name);
+//    }
 
 }

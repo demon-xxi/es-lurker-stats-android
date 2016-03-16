@@ -10,6 +10,7 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -51,6 +52,9 @@ dependencies {
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'com.snappydb:snappydb-lib:0.5.2'
     compile 'com.esotericsoftware.kryo:kryo:2.24.0'
+    compile 'com.robertoestivill.intentbuilder:intentbuilder:0.1.1'
+    compile 'io.supercharge:rxsnappy:0.2.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.0.1'
 }
 
 apply plugin: 'com.android.application'
