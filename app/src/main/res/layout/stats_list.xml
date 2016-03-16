@@ -15,14 +15,18 @@
         android:indeterminate="true"
         android:indeterminateOnly="true" />
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list"
-        android:name="tv.esporter.lurkerstats.StatsFragment"
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/activity_main_swipe_refresh_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="8dp"
-        android:visibility="gone"
-        app:layoutManager="LinearLayoutManager"
-        tools:listitem="@layout/stats_list_item" />
-
+        android:layout_height="wrap_content">
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list"
+            android:name="tv.esporter.lurkerstats.StatsFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="8dp"
+            android:visibility="gone"
+            app:layoutManager="LinearLayoutManager"
+            tools:listitem="@layout/stats_list_item" />
+    </android.support.v4.widget.SwipeRefreshLayout>
 </FrameLayout>

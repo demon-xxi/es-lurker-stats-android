@@ -1,6 +1,5 @@
 package tv.esporter.lurkerstats;
 
-import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -167,7 +166,7 @@ public class ViewerActivity extends AppCompatActivity {
                     if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
                     if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
                     loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
-                            PERIOD);
+                            PERIOD, false);
                     break;
             }
 
@@ -179,27 +178,32 @@ public class ViewerActivity extends AppCompatActivity {
         }
     };
 
-    private void loadStats(StatsItem.Type type, String period) {
+    public void loadStats(StatsItem.Type type, boolean force) {
+        loadStats(type, PERIOD, force);
+    }
+    private void loadStats(StatsItem.Type type, String period, boolean force) {
         String key = Build.key(mUserName, type, period);
 
-        try {
-            // try getting fresh data first
-        ArrayList<StatsItem> stats =
-                cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
-                        DataServiceHelper.SHORT_TTL,
-                new ArrayList<StatsItem>().getClass()).toBlocking().first();
-            Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
-            setStats(stats, type);
-            return;
-        } catch (CacheExpiredException | MissingDataException e) {
-            // get any data
-            try{
+        if (!force) {
+            try {
+                // try getting fresh data first
                 ArrayList<StatsItem> stats =
                         cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                DataServiceHelper.SHORT_TTL,
                                 new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
                 setStats(stats, type);
-            } catch (MissingDataException e2){
-                // ignoring
+                return;
+            } catch (CacheExpiredException | MissingDataException e) {
+                // get any data
+                try {
+                    ArrayList<StatsItem> stats =
+                            cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                    new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                    setStats(stats, type);
+                } catch (MissingDataException e2) {
+                    // ignoring
+                }
             }
         }
 
@@ -314,7 +318,6 @@ public class ViewerActivity extends AppCompatActivity {
     private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
     public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
         dataSubscribers.put(type, statsListFragment);
-        loadStats(type, PERIOD);
     }
 
     public void unSubscibeForData(StatsListFragment statsListFragment) {
