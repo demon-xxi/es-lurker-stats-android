@@ -7,6 +7,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -62,7 +63,7 @@ public class StatsListFragment extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-//        Log.v(">>>> StatsListFragment", "onCreate " + count);
+        Log.d(">>>> StatsListFragment", "onCreate");
         super.onCreate(savedInstanceState);
 
         if (getArguments() != null) {
@@ -82,7 +83,7 @@ public class StatsListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-//        Log.v(">>>> StatsListFragment", "onCreateView " + count);
+        Log.d(">>>> StatsListFragment", "onCreateView");
         View view = inflater.inflate(R.layout.stats_list, container, false);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
@@ -126,7 +127,7 @@ public class StatsListFragment extends Fragment {
 
     @Override
     public void onAttach(Context context) {
-//        Log.v(">>>> StatsListFragment", "onAttach " + count);
+        Log.d(">>>> StatsListFragment", "onAttach");
         super.onAttach(context);
         if (context instanceof ViewerActivity) {
             mActivity = (ViewerActivity) context;

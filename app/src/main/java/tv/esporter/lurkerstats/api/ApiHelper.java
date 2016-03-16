@@ -10,6 +10,7 @@ import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.moshi.MoshiConverterFactory;
@@ -22,7 +23,13 @@ public class ApiHelper {
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setMaxRequestsPerHost(dispatcher.getMaxRequests()); //default 64
 
-        OkHttpClient httpClient = new OkHttpClient.Builder().addInterceptor(chain -> {
+
+        HttpLoggingInterceptor logger = new HttpLoggingInterceptor();
+        logger.setLevel(HttpLoggingInterceptor.Level.BASIC);
+
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+                .addInterceptor(logger)
+                .addInterceptor(chain -> {
             Request originalRequest = chain.request();
             Request newRequest = originalRequest.newBuilder()
                     .addHeader("Authorization", "Bearer " + token).build();

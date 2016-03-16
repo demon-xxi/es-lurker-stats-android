@@ -89,12 +89,12 @@ public class DataService extends IntentService {
         TwitchApi twitch = ApiHelper.getTwitchApi();
 
         twitch.channelRx(username)
-                .doOnNext(twitchChannel1 -> {
+                .doOnNext(twitchChannel1 ->
                     cache.setObject(
                             Build.key(TwitchChannel.class.getSimpleName(),username),
                             twitchChannel1)
-                            .toBlocking().first();
-                })
+                            .toBlocking().first()
+                )
                 .toBlocking().subscribe(
                 twitchChannel -> {
                     Intent intent = Build.intent(DataServiceHelper.EVENT_PROFILE_UPDATED)
@@ -149,15 +149,21 @@ public class DataService extends IntentService {
                                         .onErrorResumeNext(
                                                 twitch.channelRx(chan.channel)
                                                         .observeOn(Schedulers.newThread())
-                                                .doOnNext(twitchChannel ->
-                                                    cache.setObject(Build.key(
-                                                            TwitchChannel.class.getSimpleName(),
-                                                            chan.channel
-                                                    ), twitchChannel).toBlocking().first()
+                                                .onErrorReturn(throwable -> null)
+                                                        .doOnNext(twitchChannel -> {
+                                                            if (twitchChannel != null)
+                                                                cache.setObject(Build.key(
+                                                                        TwitchChannel.class.getSimpleName(),
+                                                                        chan.channel
+                                                                ), twitchChannel).toBlocking().first();
+                                                        }
                                                 )
                                         )
                                         .single().map(twitchChannel -> new StatsItem(StatsItem.Type.CHANNEL,
-                                                chan.channel, twitchChannel.display_name, twitchChannel.logo, chan.duration))
+                                                chan.channel,
+                                                twitchChannel != null ? twitchChannel.display_name : chan.channel ,
+                                                twitchChannel != null ? twitchChannel.logo : null,
+                                                chan.duration))
 
                                     ));
                 break;

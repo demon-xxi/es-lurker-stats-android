@@ -1,5 +1,6 @@
 package tv.esporter.lurkerstats;
 
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -65,23 +66,29 @@ public class ViewerActivity extends AppCompatActivity {
     private RxSnappyClient cache;
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-//        Log.v(">>>> ViewerActivity", "onCreate");
+        Log.d(">>>> ViewerActivity", "onCreate");
 
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_viewer);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-
+        // do these before restoring savedInstanceState
         if (getIntent().hasExtra(EXTRA_USERNAME)){
             mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
         } else {
             mUserName = getString(R.string.default_username);
         }
+        try {
+            cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
+        } catch (SnappydbException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e("ViewerActivity", "Error during cache initialization", e);
+            finish();
+        }
+
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_viewer);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         ab = getSupportActionBar();
         if (ab != null){
@@ -117,15 +124,7 @@ public class ViewerActivity extends AppCompatActivity {
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        try {
-            cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
-//            channelCache = new Cache<>(getApplicationContext(), TwitchChannel.class);
-//            statsCache = new Cache<>(getApplicationContext(), StatsItem[].class);
-        } catch (SnappydbException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-            Log.e("ViewerActivity", "Error during cache initialization", e);
-            finish();
-        }
+
 
         IntentFilter filter = new IntentFilter(DataServiceHelper.EVENT_PROFILE_UPDATED);
         filter.addAction(DataServiceHelper.EVENT_STATS_UPDATED);
@@ -138,12 +137,21 @@ public class ViewerActivity extends AppCompatActivity {
 
     @Override
     protected void onStart() {
+        Log.d(">>>> ViewerActivity", "onStart");
         super.onStart();
 
         loadUserProfile();
-        loadStats(StatsItem.Type.CHANNEL, PERIOD);
-        loadStats(StatsItem.Type.GAME, PERIOD);
     }
+
+
+//    @Override
+//    protected void onPostResume() {
+//        Log.d(">>>> ViewerActivity", "onPostResume");
+//        super.onPostResume();
+//        loadUserProfile();
+//        loadStats(StatsItem.Type.CHANNEL, PERIOD);
+//        loadStats(StatsItem.Type.GAME, PERIOD);
+//    }
 
     // Our handler for received Intents.
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -180,6 +188,7 @@ public class ViewerActivity extends AppCompatActivity {
                 cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
                         DataServiceHelper.SHORT_TTL,
                 new ArrayList<StatsItem>().getClass()).toBlocking().first();
+            Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
             setStats(stats, type);
             return;
         } catch (CacheExpiredException | MissingDataException e) {
@@ -199,6 +208,7 @@ public class ViewerActivity extends AppCompatActivity {
     }
 
     private void setStats(List<StatsItem> statsItems, StatsItem.Type type) {
+        Log.d("ViewerActivity", "setStats " + type);
         StatsListFragment sub = dataSubscribers.get(type);
         if (sub != null) sub.setData(statsItems);
     }
@@ -304,6 +314,7 @@ public class ViewerActivity extends AppCompatActivity {
     private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
     public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
         dataSubscribers.put(type, statsListFragment);
+        loadStats(type, PERIOD);
     }
 
     public void unSubscibeForData(StatsListFragment statsListFragment) {

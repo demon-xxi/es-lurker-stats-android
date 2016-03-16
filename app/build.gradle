@@ -54,6 +54,7 @@ dependencies {
     compile 'com.esotericsoftware.kryo:kryo:2.24.0'
     compile 'com.robertoestivill.intentbuilder:intentbuilder:0.1.1'
     compile 'io.supercharge:rxsnappy:0.2.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.0.1'
 }
 
 apply plugin: 'com.android.application'
