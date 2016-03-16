@@ -1,12 +1,13 @@
 package tv.esporter.lurkerstats;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,13 +15,21 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.Toast;
 
+import com.snappydb.SnappyDB;
+import com.snappydb.SnappydbException;
+
+import java.util.ArrayList;
 import java.util.List;
 
+import io.supercharge.rxsnappy.RxSnappyClient;
+import io.supercharge.rxsnappy.exception.CacheExpiredException;
+import io.supercharge.rxsnappy.exception.MissingDataException;
+import tv.esporter.lurkerstats.api.TwitchChannel;
 import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
-import tv.esporter.lurkerstats.service.UserProfile;
+import tv.esporter.lurkerstats.util.Build;
 
 public class ViewerActivity extends AppCompatActivity
         implements OnStatsItemListFragmentInteractionListener, DataServiceHelper.Interface {
@@ -44,17 +53,23 @@ public class ViewerActivity extends AppCompatActivity
 
     private StatsListFragment mGamesFragment;
     private StatsListFragment mChannelsFragment;
-    private DataServiceHelper mDataServiceHelper;
-    private Toolbar mToolbar;
-
+//    private DataServiceHelper mDataServiceHelper;
+    private ActionBar ab;
     private String mUserName;
+
+//    Cache<TwitchChannel> channelCache;
+//    Cache<ArrayList<StatsItem>> statsCache;
+
+    private static final String PERIOD  = "currentmonth";
+    private RxSnappyClient cache;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer);
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(mToolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
 
         if (getIntent().hasExtra(EXTRA_USERNAME)){
             mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
@@ -62,19 +77,14 @@ public class ViewerActivity extends AppCompatActivity
             mUserName = getString(R.string.default_username);
         }
 
-
-        final ActionBar ab = getSupportActionBar();
+        ab = getSupportActionBar();
         if (ab != null){
             ab.setDisplayShowHomeEnabled(true);
             ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
             ab.setTitle(mUserName);
         }
 
-        mToolbar.setTitle(mUserName);
-
-
-        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
-
+//        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
         mChannelsFragment = new StatsListFragment();
         mGamesFragment = new StatsListFragment();
 
@@ -92,19 +102,117 @@ public class ViewerActivity extends AppCompatActivity
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show());
+        try {
+            cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
+//            channelCache = new Cache<>(getApplicationContext(), TwitchChannel.class);
+//            statsCache = new Cache<>(getApplicationContext(), StatsItem[].class);
+        } catch (SnappydbException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e("ViewerActivity", "Error during cache initialization", e);
+            finish();
+        }
 
-        mDataServiceHelper.startActionFetchUserProfile(this,
-                mUserName);
+        IntentFilter filter = new IntentFilter(DataServiceHelper.EVENT_PROFILE_UPDATED);
+        filter.addAction(DataServiceHelper.EVENT_STATS_UPDATED);
 
-        mDataServiceHelper.startActionFetchUserStats(this,
-                mUserName, "currentmonth", StatsItem.Type.GAME);
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mMessageReceiver, filter);
 
-        mDataServiceHelper.startActionFetchUserStats(this,
-                mUserName, "currentmonth", StatsItem.Type.CHANNEL);
+        loadUserProfile();
+        loadStats(StatsItem.Type.CHANNEL, PERIOD);
+        loadStats(StatsItem.Type.GAME, PERIOD);
+
     }
+
+    // Our handler for received Intents.
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            switch (intent.getAction()){
+                case DataServiceHelper.EVENT_PROFILE_UPDATED:
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
+                    loadUserProfile();
+                    break;
+                case DataServiceHelper.EVENT_STATS_UPDATED:
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
+                    loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
+                            PERIOD);
+                    break;
+            }
+
+
+            // TODO Auto-generated method stub
+            // Get extra data included in the Intent
+            String message = intent.getStringExtra("message");
+            Log.d("receiver", "Got message: " + message);
+        }
+    };
+
+    private void loadStats(StatsItem.Type type, String period) {
+        String key = Build.key(mUserName, type, period);
+
+        try {
+            // try getting fresh data first
+        ArrayList<StatsItem> stats =
+                cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                        DataServiceHelper.SHORT_TTL,
+                new ArrayList<StatsItem>().getClass()).toBlocking().first();
+            setStats(stats, type);
+            return;
+        } catch (CacheExpiredException | MissingDataException e) {
+            // get any data
+            try{
+                ArrayList<StatsItem> stats =
+                        cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                setStats(stats, type);
+            } catch (MissingDataException e2){
+                // ignoring
+            }
+        }
+
+        // request fresh data
+        DataServiceHelper.startActionFetchUserStats(this, mUserName, period, type);
+    }
+
+    private void setStats(List<StatsItem> statsItems, StatsItem.Type type) {
+        switch (type) {
+            case GAME:
+                mGamesFragment.setData(statsItems);
+                break;
+            case CHANNEL:
+                mChannelsFragment.setData(statsItems);
+                break;
+        }
+    }
+
+    private void loadUserProfile() {
+        try {
+            TwitchChannel profile = cache.getObject(Build.key(TwitchChannel.class.getSimpleName(), mUserName),
+                    DataServiceHelper.LONG_TTL,
+                    TwitchChannel.class).toBlocking().first();
+
+            setProfile(profile);
+            return;
+        } catch (CacheExpiredException | MissingDataException e1) {
+            try {
+                TwitchChannel profile = cache.getObject(Build.key(TwitchChannel.class.getSimpleName(), mUserName),
+                        TwitchChannel.class).toBlocking().first();
+                setProfile(profile);
+            } catch (MissingDataException e2){
+                // ignoring
+            }
+        }
+        // request profile update
+        DataServiceHelper.startActionFetchUserProfile(this, mUserName);
+    }
+
+    private void setProfile(TwitchChannel channel) {
+        if (ab != null) ab.setTitle(channel.display_name);
+    }
+
 
 //    @Override
 //    protected void onPause() {
@@ -177,12 +285,12 @@ public class ViewerActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onReceiveUserProfileResult(String username, UserProfile profile) {
-        Log.d("ProfileResult", username);
-//        mToolbar.setTitle(profile.name);
-//        mToolbar.setLogo();
-//        mToolbar.setSubtitle(profile.name);
-    }
+//    @Override
+//    public void onReceiveUserProfileResult(String usernamee) {
+//        Log.d("ProfileResult", username);
+////        mToolbar.setTitle(profile.name);
+////        mToolbar.setLogo();
+////        mToolbar.setSubtitle(profile.name);
+//    }
 
 }

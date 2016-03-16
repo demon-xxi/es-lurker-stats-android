@@ -2,22 +2,23 @@ package tv.esporter.lurkerstats.service;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.net.Uri;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.os.ResultReceiver;
 import android.util.Log;
 
+import com.snappydb.DB;
+import com.snappydb.SnappyDB;
 import com.snappydb.SnappydbException;
 
 import java.util.ArrayList;
 
+import io.supercharge.rxsnappy.RxSnappyClient;
 import rx.Observable;
 import rx.schedulers.Schedulers;
-import tv.esporter.lurkerstats.R;
 import tv.esporter.lurkerstats.api.ApiHelper;
 import tv.esporter.lurkerstats.api.StatsApi;
 import tv.esporter.lurkerstats.api.TwitchApi;
 import tv.esporter.lurkerstats.api.TwitchChannel;
+import tv.esporter.lurkerstats.util.Build;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -29,8 +30,10 @@ public class DataService extends IntentService {
     private static final String ACTION_FETCH_USER_PROFILE = "tv.esporter.lurkerstats.action.FETCH_USER_PROFILE";
     private static final String ACTION_FETCH_STATS = "tv.esporter.lurkerstats.action.FETCH_GAMES_STATS";
 
-    Cache<TwitchChannel> channelCache;
-    Cache<StatsItem[]> statsCache;
+//    Cache<TwitchChannel> channelCache;
+//    Cache<ArrayList<StatsItem>> statsCache;
+
+    private RxSnappyClient cache;
 
     public DataService(){
         super("DataService");
@@ -40,12 +43,15 @@ public class DataService extends IntentService {
     public void onCreate() {
         Log.w("DataService", "onCreate");
         super.onCreate();
+
         try {
-            channelCache = new Cache<>(getApplicationContext(), TwitchChannel.class);
-            statsCache = new Cache<>(getApplicationContext(), StatsItem[].class);
+//            channelCache = new Cache<>(getApplicationContext(), TwitchChannel.class);
+//            statsCache = new Cache<>(getApplicationContext(), StatsItem[].class);
+            cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
         } catch (SnappydbException e) {
             // TODO: Handle exceptions and relay error to user ui
-            Log.e("DataService.onCreate()", e.getMessage());
+            e.printStackTrace();
+            Log.e("DataService", "Failed to open database", e);
             e.printStackTrace();
         }
     }
@@ -54,8 +60,9 @@ public class DataService extends IntentService {
     public void onDestroy() {
         Log.w("DataService", "onDestroy");
         super.onDestroy();
-        channelCache = null;
-        statsCache = null;
+//        channelCache = null;
+//        statsCache = null;
+        cache = null;
     }
 
     @Override
@@ -64,14 +71,12 @@ public class DataService extends IntentService {
             final String action = intent.getAction();
             Log.w("DataService", "onHandleIntent: " + action);
 
-            final ResultReceiver receiver = DataServiceHelper.getIntentResultReceiver(intent);
-
             if (ACTION_FETCH_USER_PROFILE.equals(action)) {
-                handleActionFetchUserProfile(DataServiceHelper.getUserName(intent), receiver);
+                handleActionFetchUserProfile(DataServiceHelper.getUserName(intent));
             } else if (ACTION_FETCH_STATS.equals(action)) {
                 handleActionFetchStats(DataServiceHelper.getUserName(intent),
                         DataServiceHelper.getPeriod(intent),
-                        DataServiceHelper.getStatsType(intent), receiver);
+                        DataServiceHelper.getStatsType(intent));
             }
         }
     }
@@ -80,20 +85,31 @@ public class DataService extends IntentService {
      * Handle action ACTION_FETCH_USER_PROFILE
      * in the provided background thread with the provided parameters.
      */
-    private void handleActionFetchUserProfile(String username, ResultReceiver receiver) {
+    private void handleActionFetchUserProfile(String username) {
 
-//        TwitchApi twitch = ApiHelper.getTwitchApi();
+        TwitchApi twitch = ApiHelper.getTwitchApi();
 
-        UserProfile profile = new UserProfile(username,
-                Uri.parse("https://static-cdn.jtvnw.net/jtv_user_pictures/demon_xxi-profile_image-6e334affccfca491-300x300.png"));
+        twitch.channelRx(username)
+                .doOnNext(twitchChannel1 -> {
+                    cache.setObject(
+                            Build.key(TwitchChannel.class.getSimpleName(),username),
+                            twitchChannel1)
+                            .toBlocking().first();
+                })
+                .toBlocking().subscribe(
+                twitchChannel -> {
+                    Intent intent = Build.intent(DataServiceHelper.EVENT_PROFILE_UPDATED)
+                            .extra(DataServiceHelper.EXTRA_USERNAME, username)
+                            .build();
 
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
 
-        DataServiceHelper.replyUserProfileSuccess(receiver, username, profile);
+                },
+                // TODO: Emmit error to UI
+                Throwable::printStackTrace
+        );
+
+
     }
 
     private static final String GAME_BOX_ART_TEMPLATE  = "http://static-cdn.jtvnw.net/ttv-boxart/%s-136x190.jpg";
@@ -102,7 +118,7 @@ public class DataService extends IntentService {
      * Handle action ACTION_FETCH_GAMES_STATS or ACTION_FETCH_CHANNELS_STATS
      * in the provided background thread with the provided parameters.
      */
-    private void handleActionFetchStats(final String username, final String period, final StatsItem.Type type, final ResultReceiver receiver) {
+    private void handleActionFetchStats(final String username, final String period, final StatsItem.Type type) {
 
         StatsApi api = ApiHelper.getStatsApi();
         TwitchApi twitch = ApiHelper.getTwitchApi();
@@ -120,33 +136,34 @@ public class DataService extends IntentService {
                         );
                 break;
             case CHANNEL:
-                    statsStream = Observable.merge(
+                    statsStream =
                             api.channelsStatsRx(username, period)
                                     .flatMap(Observable::from)
                                     .observeOn(Schedulers.newThread())
                                     .map(chan -> {
-                                            TwitchChannel stream = null;
-                                            try {
-                                                stream = channelCache.get(chan.channel);
-                                            } catch (SnappydbException e) {
-                                            }
 
-                                        if (stream == null){
-                                            return  twitch.channelRx(chan.channel).map(tc -> {
-                                                try {
-                                                    channelCache.put(chan.channel, tc);
-                                                } catch (SnappydbException e) {
-                                                    e.printStackTrace();
-                                                }
-                                                return new StatsItem(StatsItem.Type.CHANNEL,
-                                                        chan.channel, tc.display_name, tc.logo, chan.duration);
-                                            }).single();
-                                        } else {
-                                            return  Observable.just(stream).map(tc -> new StatsItem(StatsItem.Type.CHANNEL,
-                                                    chan.channel, tc.display_name, tc.logo, chan.duration)).single();
-                                        }
+                                        TwitchChannel stream = cache.getObject(
+                                                Build.key(TwitchChannel.class.getSimpleName(), chan.channel),
+                                                DataServiceHelper.EXTRA_LONG_TTL,
+                                                TwitchChannel.class
+                                        )
+                                                .onErrorResumeNext(
+                                                        twitch.channelRx(chan.channel)
+                                                        .doOnNext(twitchChannel -> {
+                                                            cache.setObject(Build.key(
+                                                                    TwitchChannel.class.getSimpleName(),
+                                                                    chan.channel
+                                                            ), twitchChannel).toBlocking().first();
+                                                        })
+                                                )
+                                                .toBlocking().first();
+
+
+                                        return new StatsItem(StatsItem.Type.CHANNEL,
+                                                chan.channel, stream.display_name, stream.logo, chan.duration);
+
                                     }
-                                    ));
+                                    );
                 break;
             default:
                 // ensure statsStream != null
@@ -159,21 +176,23 @@ public class DataService extends IntentService {
                         result -> {
                             ArrayList<StatsItem> stats = new ArrayList<>();
                             stats.addAll(result);
-                            try {
-                                statsCache.put(String.format("%s#%s", username, type), (StatsItem[]) stats.toArray());
-                            } catch (SnappydbException e) {
-                                e.printStackTrace();
-                                Log.e("DataService", "handleActionFetchStats", e);
-                            }
 
-                            Intent intent = new Intent(DataServiceHelper.EVENT_STATS_UPDATED);
-                            intent.putExtra(DataServiceHelper.EXTRA_USERNAME, username);
-                            intent.putExtra(DataServiceHelper.EXTRA_STATS_TYPE, type);
-                            intent.putExtra(DataServiceHelper.EXTRA_PERIOD, period);
+                            cache.setObject(Build.key(
+                                    StatsItem.class.getSimpleName(),
+                                    username, type, period
+                            ), stats).toBlocking().first();
+
+                            Intent intent = Build.intent(DataServiceHelper.EVENT_STATS_UPDATED)
+                                    .extra(DataServiceHelper.EXTRA_USERNAME, username)
+                                    .extra(DataServiceHelper.EXTRA_STATS_TYPE, type)
+                                    .extra(DataServiceHelper.EXTRA_PERIOD, period)
+                                    .build();
+
                             LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
 
                         },
                         e -> {
+                            // TODO: Emmit error to UI
                             e.printStackTrace();
                             Log.e("DataService", "handleActionFetchStats", e);
 //                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);

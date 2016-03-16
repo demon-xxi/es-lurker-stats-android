@@ -13,13 +13,16 @@ import java.util.Random;
  */
 public class StatsItem implements Parcelable {
 
-    public final String name;
-    public final String title;
-    public final Long value;
-    public final String image;
-    public final Type type;
+    public String name;
+    public String title;
+    public Long value;
+    public String image;
+    public Type type;
 
-    public StatsItem(Type type, String name, String title, String image,  Long value) {
+    public StatsItem() {
+    }
+
+    public StatsItem(Type type, String name, String title, String image, Long value) {
         this.name = name;
         this.title = title;
         this.value = value;

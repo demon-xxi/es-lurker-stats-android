@@ -14,8 +14,12 @@ import java.util.List;
 
 public class DataServiceHelper {
 
-    private final Interface mHandler;
-    private final ResultReceiver mReceiver;
+    public static final long EXTRA_LONG_TTL = 1000 * 3600 * 24 * 10;   // 10 days
+    public static final long LONG_TTL = 1000 * 3600 * 24;   // 1 day
+    public static final long SHORT_TTL = 1000 * 60 * 5;     // 5 min
+
+//    private final Interface mHandler;
+//    private final ResultReceiver mReceiver;
 
     private static final int RESULT_CODE_PROFILE_SUCCESS    = 0x01;
     private static final int RESULT_CODE_PROFILE_FAILURE    = 0x02;
@@ -33,6 +37,7 @@ public class DataServiceHelper {
     public static final String EXTRA_RECEIVER = "tv.esporter.lurkerstats.extra.RECEIVER";
 
     public static final String EVENT_STATS_UPDATED = "tv.esporter.lurkerstats.action.EVENT_STATS_UPDATED";
+    public static final String EVENT_PROFILE_UPDATED = "tv.esporter.lurkerstats.action.EVENT_PROFILE_UPDATED";
 
     /**
      * Create a new ResultReceive to receive results.  Your
@@ -41,34 +46,34 @@ public class DataServiceHelper {
      *
      * @param handler
      */
-    public DataServiceHelper(Handler handler, Interface receiver) {
-        mHandler = receiver;
-        mReceiver = new ResultReceiver(handler){
-            @Override
-            protected void onReceiveResult(int resultCode, Bundle bundle) {
-                if (mHandler == null) return;
-
-                switch (resultCode){
-                    case RESULT_CODE_PROFILE_SUCCESS:
-                        mHandler.onReceiveUserProfileResult(
-                                bundle.getString(EXTRA_USERNAME),
-                                (UserProfile) bundle.getParcelable(EXTRA_PROFILE)
-                        );
-                        break;
-                    case RESULT_CODE_STATS_SUCCESS:
-                        mHandler.onReceiveUserStatsResult(
-                                bundle.getString(EXTRA_USERNAME),
-                                StatsItem.Type.valueOf(bundle.getString(EXTRA_STATS_TYPE)),
-                                bundle.getString(EXTRA_PERIOD),
-                                bundle.<StatsItem>getParcelableArrayList(EXTRA_STATS)
-                        );
-                        break;
-                    default:
-                        Log.w("DataServiceHelper", "Unhandled resultCode: " + resultCode);
-                }
-            }
-        };
-    }
+//    public DataServiceHelper(Handler handler, Interface receiver) {
+//        mHandler = receiver;
+//        mReceiver = new ResultReceiver(handler){
+//            @Override
+//            protected void onReceiveResult(int resultCode, Bundle bundle) {
+//                if (mHandler == null) return;
+//
+//                switch (resultCode){
+//                    case RESULT_CODE_PROFILE_SUCCESS:
+//                        mHandler.onReceiveUserProfileResult(
+//                                bundle.getString(EXTRA_USERNAME),
+//                                (UserProfile) bundle.getParcelable(EXTRA_PROFILE)
+//                        );
+//                        break;
+//                    case RESULT_CODE_STATS_SUCCESS:
+//                        mHandler.onReceiveUserStatsResult(
+//                                bundle.getString(EXTRA_USERNAME),
+//                                StatsItem.Type.valueOf(bundle.getString(EXTRA_STATS_TYPE)),
+//                                bundle.getString(EXTRA_PERIOD),
+//                                bundle.<StatsItem>getParcelableArrayList(EXTRA_STATS)
+//                        );
+//                        break;
+//                    default:
+//                        Log.w("DataServiceHelper", "Unhandled resultCode: " + resultCode);
+//                }
+//            }
+//        };
+//    }
 
     /**
      * Starts this service to perform ACTION_FETCH_GAMES_STATS or ACTION_FETCH_CHANNELS_STATS action with the given parameters. If
@@ -76,7 +81,7 @@ public class DataServiceHelper {
      *
      * @see IntentService
      */
-    public void startActionFetchUserStats(Context context,
+    public static void startActionFetchUserStats(Context context,
                                                  String username, String period,
                                                  StatsItem.Type type) {
         Intent intent = new Intent(context, DataService.class);
@@ -84,7 +89,7 @@ public class DataServiceHelper {
         intent.putExtra(EXTRA_USERNAME, username);
         intent.putExtra(EXTRA_PERIOD, period);
         intent.putExtra(EXTRA_STATS_TYPE, type.toString());
-        intent.putExtra(EXTRA_RECEIVER, mReceiver);
+//        intent.putExtra(EXTRA_RECEIVER, mReceiver);
         context.startService(intent);
     }
 
@@ -94,19 +99,19 @@ public class DataServiceHelper {
      *
      * @see IntentService
      */
-    public void startActionFetchUserProfile(Context context,
+    public static void startActionFetchUserProfile(Context context,
                                                    String username) {
         Intent intent = new Intent(context, DataService.class);
         intent.setAction(ACTION_FETCH_USER_PROFILE);
         intent.putExtra(EXTRA_USERNAME, username);
-        intent.putExtra(EXTRA_RECEIVER, mReceiver);
+//        intent.putExtra(EXTRA_RECEIVER, mReceiver);
         context.startService(intent);
     }
 
-    public static void replyUserProfileSuccess(ResultReceiver receiver, String username, UserProfile profile){
+    public static void replyUserProfileSuccess(ResultReceiver receiver, String username){
         Bundle bundle = new Bundle();
         bundle.putString(EXTRA_USERNAME, username);
-        bundle.putParcelable(EXTRA_PROFILE, profile);
+//        bundle.putParcelable(EXTRA_PROFILE, profile);
         receiver.send(RESULT_CODE_PROFILE_SUCCESS, bundle);
     }
 
@@ -140,7 +145,7 @@ public class DataServiceHelper {
     public interface Interface {
         void onReceiveUserStatsResult(String username, StatsItem.Type type,
                                       String period, List<StatsItem> stats);
-        void onReceiveUserProfileResult(String username, UserProfile profile);
+//        void onReceiveUserProfileResult(String username, UserProfile profile);
     }
 
 }
