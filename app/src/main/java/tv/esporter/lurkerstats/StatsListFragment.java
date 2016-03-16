@@ -91,6 +91,8 @@ public class StatsListFragment extends Fragment {
 
         Context context = view.getContext();
 
+        mColumnCount = getResources().getInteger(R.integer.stats_list_columns);
+
         mLayoutManager = mColumnCount > 1
                 ? new GridLayoutManager(context, mColumnCount)
                 : new LinearLayoutManager(context);
