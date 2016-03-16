@@ -230,6 +230,7 @@ public class StatsListFragment extends Fragment {
     //        final float scale = context.getResources().getDisplayMetrics().density;
     //        int radius = (int) (5 * scale);
             holder.mImageView.setImageDrawable(null);
+            holder.mImageView.setContentDescription(current.title);
             if (current.image != null && !current.image.isEmpty()) {
                 Picasso.with(StatsListFragment.this.getContext())
                         .load(current.image)
