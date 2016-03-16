@@ -7,4 +7,12 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_twitch_channel"
+        android:icon="@drawable/twitch"
+        android:orderInCategory="800"
+
+        android:title="@string/action_twitch_channel"
+        app:showAsAction="always" />
 </menu>

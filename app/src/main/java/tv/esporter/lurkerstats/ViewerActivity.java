@@ -32,6 +32,7 @@ import tv.esporter.lurkerstats.api.TwitchChannel;
 import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
 import tv.esporter.lurkerstats.util.Build;
+import tv.esporter.lurkerstats.util.Integrator;
 
 public class ViewerActivity extends AppCompatActivity {
 
@@ -290,6 +291,7 @@ public class ViewerActivity extends AppCompatActivity {
 
         switch (item.type) {
             case GAME:
+                Integrator.OpenTwitchGame(this, item.name);
                 break;
             case CHANNEL:
                 Intent intent = new Intent(this, ViewerActivity.class);
