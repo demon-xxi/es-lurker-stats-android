@@ -7,7 +7,6 @@ import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import rx.Observable;
-import tv.esporter.lurkerstats.service.TokenResponse;
 
 /**
  * Interface to some of the REST API methods defined
@@ -25,6 +24,12 @@ public interface TwitchApi {
 
     @GET("streams/{username}")
     Observable<StreamContainer> streamRx(@Path("username") String user);
+
+    @GET("user")
+    Call<TwitchUser> me();
+
+    @GET("user")
+    Observable<TwitchUser> meRx();
 
     @FormUrlEncoded
     @POST("oauth2/token")

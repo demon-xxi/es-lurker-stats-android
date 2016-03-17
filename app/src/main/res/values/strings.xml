@@ -8,10 +8,10 @@
     <string name="title_activity_tabs">TabsActivity</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="game_icon">Game Icon</string>
-    <string name="default_username">demon_xxi</string>
+    <string name="default_username" translatable="false">demon_xxi</string>
 
-    <string name="twitter_contact">demon_xxi</string>
-    <string name="support_url">https://github.com/demon-xxi/es-lurker-stats-android/issues</string>
+    <string name="twitter_contact" translatable="false">demon_xxi</string>
+    <string name="support_url" translatable="false">https://github.com/demon-xxi/es-lurker-stats-android/issues</string>
     <string name="title_activity_login">Sign in</string>
 
     <!-- Strings related to login -->
@@ -27,4 +27,9 @@
         completions."
     </string>
     <string name="login_with_twitch">Login with Twitch</string>
+
+    <string name="kv_prefs" translatable="false">kv_prefs</string>
+    <string name="k_twitch_access_token" translatable="false">twitch_access_token</string>
+    <string name="k_twitch_scope" translatable="false">twitch_scope</string>
+    <string name="k_twitch_username" translatable="false">twitch_username</string>
 </resources>

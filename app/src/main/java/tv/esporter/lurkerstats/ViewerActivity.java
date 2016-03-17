@@ -74,7 +74,9 @@ public class ViewerActivity extends AppCompatActivity {
         if (getIntent().hasExtra(EXTRA_USERNAME)){
             mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
         } else {
-            mUserName = getString(R.string.default_username);
+            mUserName = getSharedPreferences(getString(R.string.kv_prefs), Context.MODE_PRIVATE)
+                    .getString(getString(R.string.k_twitch_username),
+                            getString(R.string.default_username));
         }
         try {
             cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
