@@ -12,6 +12,13 @@ This code is optimized for v19 (KitKat) and up. Mainly tested on Marshmellow.
 
 Tablets and Phones or any screen sizes are supported. Optimized for better experience on tablets.
 
+## Dev Details
+- Storage: [SnappyDB](https://github.com/nhachicha/SnappyDB) via [RxSnappy](https://github.com/team-supercharge/rxsnappy)
+- REST Api Calls: [Retrofit](http://square.github.io/retrofit) via RxJava adapter with [Moshi](https://github.com/square/moshi) serialization
+- Components: Official Material Design, no 3rd party
+- Image Loader: [Picasso](http://square.github.io/picasso/) for caching and work with RecyclerView
+- Oauth: Simple implementation via WebView and Retrofit
+
 ## Demo
 Click image below to play video.
 
