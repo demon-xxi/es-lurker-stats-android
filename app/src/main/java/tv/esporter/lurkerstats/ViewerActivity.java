@@ -280,8 +280,14 @@ public class ViewerActivity extends AppCompatActivity {
             case R.id.action_twitch_channel:
                 Integrator.openTwitchChannel(this, mUserName);
                 break;
-            case R.id.action_settings:
-                return true;
+            case R.id.action_contact:
+                Integrator.openTwitterProfile(this, getString(R.string.twitter_contact));
+                break;
+            case R.id.action_support:
+                Integrator.openUrl(this, getString(R.string.support_url));
+                break;
+//            case R.id.action_settings:
+//                return true;
             case android.R.id.home:
                 this.finish();
                 return true;
