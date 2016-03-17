@@ -4,6 +4,7 @@
     <string name="action_twitch_channel">Open Channel</string>
     <string name="action_contact">Contact</string>
     <string name="action_support">Support</string>
+    <string name="action_logout">Log Out</string>
 
     <string name="title_activity_tabs">TabsActivity</string>
     <string name="section_format">Hello World from section: %1$d</string>

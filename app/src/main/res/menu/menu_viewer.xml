@@ -9,6 +9,16 @@
         <!--android:title="@string/action_settings"-->
         <!--app:showAsAction="never" />-->
 
+    <group
+        android:id="@+id/authenticated_menu_group"
+        >
+        <item
+            android:id="@+id/action_logout"
+            android:orderInCategory="180"
+            android:title="@string/action_logout"
+            app:showAsAction="never" />
+    </group>
+
     <item
         android:id="@+id/action_support"
         android:orderInCategory="180"

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -51,7 +52,7 @@ public class ViewerActivity extends AppCompatActivity {
     private ViewPager mViewPager;
 
     private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
-
+    private static final String LOGOUT_INTENT = "tv.esporter.lurkerstats.intent.LOGOUT";
 
 //    private StatsListFragment mGamesFragment;
 //    private StatsListFragment mChannelsFragment;
@@ -131,9 +132,11 @@ public class ViewerActivity extends AppCompatActivity {
 
         IntentFilter filter = new IntentFilter(DataServiceHelper.EVENT_PROFILE_UPDATED);
         filter.addAction(DataServiceHelper.EVENT_STATS_UPDATED);
+        filter.addAction(LOGOUT_INTENT);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, filter);
+
 
     }
 
@@ -171,6 +174,10 @@ public class ViewerActivity extends AppCompatActivity {
                     if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
                     loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
                             PERIOD, false);
+                    break;
+                case LOGOUT_INTENT:
+                    Log.d("onReceive", "Logout in progress as per LOGOUT_INTENT.");
+                    finish();
                     break;
             }
 
@@ -288,6 +295,9 @@ public class ViewerActivity extends AppCompatActivity {
             case R.id.action_support:
                 Integrator.openUrl(this, getString(R.string.support_url));
                 break;
+            case R.id.action_logout:
+                logout();
+                break;
 //            case R.id.action_settings:
 //                return true;
             case android.R.id.home:
@@ -296,6 +306,25 @@ public class ViewerActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        // erase login info
+        SharedPreferences sharedPref = getSharedPreferences(
+                getString(R.string.kv_prefs), Context.MODE_PRIVATE);
+        sharedPref.edit()
+                .remove(getString(R.string.k_twitch_access_token))
+                .remove(getString(R.string.k_twitch_username))
+                .remove(getString(R.string.k_twitch_scope))
+        .commit();
+
+        // broadcast logout for all activities
+        Intent logoutintent = Build.intent(LOGOUT_INTENT).build();
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(logoutintent);
+
+        // open login screen
+        Intent intent = new Intent(this, LoginActivity.class);
+        startActivity(intent);
     }
 
 
