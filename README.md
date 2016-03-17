@@ -18,6 +18,7 @@ Tablets and Phones or any screen sizes are supported. Optimized for better exper
 - Components: Official Material Design, no 3rd party
 - Image Loader: [Picasso](http://square.github.io/picasso/) for caching and work with RecyclerView
 - Oauth: Simple implementation via WebView and Retrofit
+- Deep Linking into Twitch app/site as per [instructions](https://github.com/justintv/Twitch-API/blob/master/mobile_deeplinks.md)
 
 ## Demo
 Click image below to play video.
