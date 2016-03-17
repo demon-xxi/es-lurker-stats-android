@@ -3,6 +3,7 @@ package tv.esporter.lurkerstats;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -46,6 +47,7 @@ public class StatsListFragment extends Fragment {
     private RecyclerView mRecyclerView;
     private ProgressBar mProgressBar;
     private RecyclerView.LayoutManager mLayoutManager;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
 //    static int CNT = 1;
 
@@ -72,9 +74,11 @@ public class StatsListFragment extends Fragment {
 
 
         if (getArguments() != null && getArguments().containsKey(DataServiceHelper.EXTRA_STATS_TYPE)){
+            StatsItem.Type type = (StatsItem.Type)getArguments().getSerializable(DataServiceHelper.EXTRA_STATS_TYPE);
             mActivity.subscibeForData(
-                    (StatsItem.Type)getArguments().getSerializable(DataServiceHelper.EXTRA_STATS_TYPE),
+                    type,
                     this);
+            mActivity.loadStats(type, false);
         }
 
 
@@ -88,6 +92,16 @@ public class StatsListFragment extends Fragment {
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
         mProgressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
+
+        mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(
+                R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
+
+        mSwipeRefreshLayout.setOnRefreshListener(() -> {
+            if (mActivity == null) return;
+            mActivity.loadStats(StatsItem.Type.CHANNEL, true);
+            mActivity.loadStats(StatsItem.Type.GAME, true);
+        });
 
         Context context = view.getContext();
 
@@ -114,6 +128,9 @@ public class StatsListFragment extends Fragment {
     }
 
     void dataReady(){
+        if (mSwipeRefreshLayout != null){
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
         mRecyclerView.setVisibility(View.VISIBLE);
         mProgressBar.setVisibility(View.GONE);
     }
@@ -230,6 +247,7 @@ public class StatsListFragment extends Fragment {
     //        final float scale = context.getResources().getDisplayMetrics().density;
     //        int radius = (int) (5 * scale);
             holder.mImageView.setImageDrawable(null);
+            holder.mImageView.setContentDescription(current.title);
             if (current.image != null && !current.image.isEmpty()) {
                 Picasso.with(StatsListFragment.this.getContext())
                         .load(current.image)

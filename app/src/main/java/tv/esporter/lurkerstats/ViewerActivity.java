@@ -1,6 +1,5 @@
 package tv.esporter.lurkerstats;
 
-import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -33,6 +32,7 @@ import tv.esporter.lurkerstats.api.TwitchChannel;
 import tv.esporter.lurkerstats.service.DataServiceHelper;
 import tv.esporter.lurkerstats.service.StatsItem;
 import tv.esporter.lurkerstats.util.Build;
+import tv.esporter.lurkerstats.util.Integrator;
 
 public class ViewerActivity extends AppCompatActivity {
 
@@ -167,7 +167,7 @@ public class ViewerActivity extends AppCompatActivity {
                     if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
                     if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
                     loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
-                            PERIOD);
+                            PERIOD, false);
                     break;
             }
 
@@ -179,27 +179,32 @@ public class ViewerActivity extends AppCompatActivity {
         }
     };
 
-    private void loadStats(StatsItem.Type type, String period) {
+    public void loadStats(StatsItem.Type type, boolean force) {
+        loadStats(type, PERIOD, force);
+    }
+    private void loadStats(StatsItem.Type type, String period, boolean force) {
         String key = Build.key(mUserName, type, period);
 
-        try {
-            // try getting fresh data first
-        ArrayList<StatsItem> stats =
-                cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
-                        DataServiceHelper.SHORT_TTL,
-                new ArrayList<StatsItem>().getClass()).toBlocking().first();
-            Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
-            setStats(stats, type);
-            return;
-        } catch (CacheExpiredException | MissingDataException e) {
-            // get any data
-            try{
+        if (!force) {
+            try {
+                // try getting fresh data first
                 ArrayList<StatsItem> stats =
                         cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                DataServiceHelper.SHORT_TTL,
                                 new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                Log.d(">>>> ViewerActivity", "loadStats: CACHED!");
                 setStats(stats, type);
-            } catch (MissingDataException e2){
-                // ignoring
+                return;
+            } catch (CacheExpiredException | MissingDataException e) {
+                // get any data
+                try {
+                    ArrayList<StatsItem> stats =
+                            cache.getObject(Build.key(StatsItem.class.getSimpleName(), key),
+                                    new ArrayList<StatsItem>().getClass()).toBlocking().first();
+                    setStats(stats, type);
+                } catch (MissingDataException e2) {
+                    // ignoring
+                }
             }
         }
 
@@ -271,6 +276,9 @@ public class ViewerActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
 
         switch (item.getItemId()){
+            case R.id.action_twitch_channel:
+                Integrator.openTwitchChannel(this, mUserName);
+                break;
             case R.id.action_settings:
                 return true;
             case android.R.id.home:
@@ -286,6 +294,7 @@ public class ViewerActivity extends AppCompatActivity {
 
         switch (item.type) {
             case GAME:
+                Integrator.openTwitchGame(this, item.name);
                 break;
             case CHANNEL:
                 Intent intent = new Intent(this, ViewerActivity.class);
@@ -314,7 +323,6 @@ public class ViewerActivity extends AppCompatActivity {
     private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
     public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
         dataSubscribers.put(type, statsListFragment);
-        loadStats(type, PERIOD);
     }
 
     public void unSubscibeForData(StatsListFragment statsListFragment) {

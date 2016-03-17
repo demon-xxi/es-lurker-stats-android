@@ -1,6 +1,7 @@
 <resources>
-    <string name="app_name">Lurker Stats</string>
+    <string name="app_name">Lurker Insights</string>
     <string name="action_settings">Settings</string>
+    <string name="action_twitch_channel">Open Channel</string>
     <string name="title_activity_tabs">TabsActivity</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="game_icon">Game Icon</string>
