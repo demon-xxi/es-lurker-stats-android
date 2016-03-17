@@ -12,6 +12,9 @@ public class Integrator {
     private static final String TWITCH_CHANNEL_APP = "twitch://stream/%s";
     private static final String TWITCH_CHANNEL_WEB = "https://www.twitch.tv/%s";
 
+    private static final String TWITTER_PROFILE_APP = "twitter://user?screen_name=%s";
+    private static final String TWITTER_PROFILE_WEB = "https://twitter.com/#!/%s";
+
     private static boolean openAnyUriIntent(Context context, Uri... uris){
         for (Uri uri : uris){
             Intent intent = Build.intent(Intent.ACTION_VIEW)
@@ -35,5 +38,17 @@ public class Integrator {
                 Uri.parse(String.format(TWITCH_CHANNEL_APP, name)),
                 Uri.parse(String.format(TWITCH_CHANNEL_WEB, name))
         );
+    }
+
+    public static void openTwitterProfile(Context context, String name) {
+        openAnyUriIntent(context,
+                Uri.parse(String.format(TWITTER_PROFILE_APP, name)),
+                Uri.parse(String.format(TWITTER_PROFILE_WEB, name))
+        );
+    }
+
+
+    public static void openUrl(Context context, String url) {
+        openAnyUriIntent(context,Uri.parse(url));
     }
 }

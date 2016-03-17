@@ -86,7 +86,7 @@ public class DataService extends IntentService {
      */
     private void handleActionFetchUserProfile(String username) {
 
-        TwitchApi twitch = ApiHelper.getTwitchApi();
+        TwitchApi twitch = ApiHelper.getTwitchApi(this);
 
         twitch.channelRx(username)
                 .doOnNext(twitchChannel1 ->
@@ -120,7 +120,7 @@ public class DataService extends IntentService {
     private void handleActionFetchStats(final String username, final String period, final StatsItem.Type type) {
 
         StatsApi api = ApiHelper.getStatsApi();
-        TwitchApi twitch = ApiHelper.getTwitchApi();
+        TwitchApi twitch = ApiHelper.getTwitchApi(this);
         Observable<StatsItem> statsStream;
 
         switch (type) {

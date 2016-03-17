@@ -4,23 +4,17 @@ import com.squareup.moshi.Moshi;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Response;
 import rx.Observable;
-import rx.Scheduler;
-import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
 import tv.esporter.lurkerstats.api.ApiHelper;
 import tv.esporter.lurkerstats.api.ChannelStat;
 import tv.esporter.lurkerstats.api.GameStat;
 import tv.esporter.lurkerstats.api.StatsApi;
 import tv.esporter.lurkerstats.api.TwitchApi;
-import tv.esporter.lurkerstats.api.TwitchChannel;
 import tv.esporter.lurkerstats.service.StatsItem;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +53,7 @@ public class StatsApiUnitTest {
         Moshi moshi = new Moshi.Builder().build();
 
         StatsApi api = ApiHelper.getStatsApi();
-        TwitchApi tapi = ApiHelper.getTwitchApi();
+        TwitchApi tapi = ApiHelper.getTwitchApi((String) null);
 
 //        Scheduler scheduler = new TestScheduler();
 

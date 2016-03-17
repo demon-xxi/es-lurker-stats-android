@@ -21,7 +21,7 @@ public class TwitchApiUnitTest {
     @Test
     public void channel_lirik() throws Exception {
 
-        TwitchApi api = ApiHelper.getTwitchApi();
+        TwitchApi api = ApiHelper.getTwitchApi((String) null);
 
         Call<TwitchChannel> call = api.channel("lirik");
         Response<TwitchChannel> resp = call.execute();
@@ -34,7 +34,7 @@ public class TwitchApiUnitTest {
     @Test
     public void stream_lirik() throws Exception {
 
-        TwitchApi api = ApiHelper.getTwitchApi();
+        TwitchApi api = ApiHelper.getTwitchApi((String) null);
 
         Call<StreamContainer> call = api.stream("lirik");
         Response<StreamContainer> resp = call.execute();
