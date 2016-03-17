@@ -1,4 +1,4 @@
-# es-lurker-stats-android
+# Lurker Insights for Android
 
 Android client for [Lurker Insights](http://lurker.esporter.tv) website.
 
