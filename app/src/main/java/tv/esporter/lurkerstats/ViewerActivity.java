@@ -85,6 +85,7 @@ public class ViewerActivity extends AppCompatActivity {
         }
 
 
+        setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
