@@ -10,8 +10,8 @@
 
     <item
         android:id="@+id/action_twitch_channel"
-        android:icon="@drawable/twitch"
-        android:orderInCategory="800"
+        android:icon="@drawable/ic_channel"
+        android:orderInCategory="80"
 
         android:title="@string/action_twitch_channel"
         app:showAsAction="always" />

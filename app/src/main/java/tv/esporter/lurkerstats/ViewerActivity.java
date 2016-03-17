@@ -276,6 +276,9 @@ public class ViewerActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
 
         switch (item.getItemId()){
+            case R.id.action_twitch_channel:
+                Integrator.openTwitchChannel(this, mUserName);
+                break;
             case R.id.action_settings:
                 return true;
             case android.R.id.home:
@@ -291,7 +294,7 @@ public class ViewerActivity extends AppCompatActivity {
 
         switch (item.type) {
             case GAME:
-                Integrator.OpenTwitchGame(this, item.name);
+                Integrator.openTwitchGame(this, item.name);
                 break;
             case CHANNEL:
                 Intent intent = new Intent(this, ViewerActivity.class);

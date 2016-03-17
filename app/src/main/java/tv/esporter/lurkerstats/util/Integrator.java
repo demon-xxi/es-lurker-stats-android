@@ -9,16 +9,31 @@ public class Integrator {
     private static final String TWITCH_GAME_APP = "twitch://game/%s";
     private static final String TWITCH_GAME_WEB = "https://www.twitch.tv/directory/game/%s";
 
-    public static void OpenTwitchGame(Context context, String name){
-        Intent intent = Build.intent(Intent.ACTION_VIEW)
-                .data(Uri.parse(String.format(TWITCH_GAME_APP, name))).build();
+    private static final String TWITCH_CHANNEL_APP = "twitch://stream/%s";
+    private static final String TWITCH_CHANNEL_WEB = "https://www.twitch.tv/%s";
 
-        if (intent.resolveActivity(context.getPackageManager()) != null){
+    private static boolean openAnyUriIntent(Context context, Uri... uris){
+        for (Uri uri : uris){
+            Intent intent = Build.intent(Intent.ACTION_VIEW)
+                    .data(uri).build();
+            if (intent.resolveActivity(context.getPackageManager())==null) continue;
             context.startActivity(intent);
-        } else {
-            Intent webintent = Build.intent(Intent.ACTION_VIEW)
-                    .data(Uri.parse(String.format(TWITCH_GAME_WEB, name))).build();
-            context.startActivity(webintent);
+            return true;
         }
+        return  false;
+    }
+
+    public static void openTwitchGame(Context context, String name){
+        openAnyUriIntent(context,
+                Uri.parse(String.format(TWITCH_GAME_APP, name)),
+                Uri.parse(String.format(TWITCH_GAME_WEB, name))
+        );
+    }
+
+    public static void openTwitchChannel(Context context, String name) {
+        openAnyUriIntent(context,
+                Uri.parse(String.format(TWITCH_CHANNEL_APP, name)),
+                Uri.parse(String.format(TWITCH_CHANNEL_WEB, name))
+        );
     }
 }
