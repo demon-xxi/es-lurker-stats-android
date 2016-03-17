@@ -22,19 +22,13 @@ import tv.esporter.lurkerstats.util.Build;
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
- * <p/>
+ * <p>
  */
 public class DataService extends IntentService {
 
-    private static final String ACTION_FETCH_USER_PROFILE = "tv.esporter.lurkerstats.action.FETCH_USER_PROFILE";
-    private static final String ACTION_FETCH_STATS = "tv.esporter.lurkerstats.action.FETCH_GAMES_STATS";
-
-//    Cache<TwitchChannel> channelCache;
-//    Cache<ArrayList<StatsItem>> statsCache;
-
     private RxSnappyClient cache;
 
-    public DataService(){
+    public DataService() {
         super("DataService");
     }
 
@@ -44,8 +38,6 @@ public class DataService extends IntentService {
         super.onCreate();
 
         try {
-//            channelCache = new Cache<>(getApplicationContext(), TwitchChannel.class);
-//            statsCache = new Cache<>(getApplicationContext(), StatsItem[].class);
             cache = new RxSnappyClient(SnappyDB.with(getApplicationContext()));
         } catch (SnappydbException e) {
             // TODO: Handle exceptions and relay error to user ui
@@ -59,8 +51,6 @@ public class DataService extends IntentService {
     public void onDestroy() {
         Log.w("DataService", "onDestroy");
         super.onDestroy();
-//        channelCache = null;
-//        statsCache = null;
         cache = null;
     }
 
@@ -70,12 +60,15 @@ public class DataService extends IntentService {
             final String action = intent.getAction();
             Log.w("DataService", "onHandleIntent: " + action);
 
-            if (ACTION_FETCH_USER_PROFILE.equals(action)) {
-                handleActionFetchUserProfile(DataServiceHelper.getUserName(intent));
-            } else if (ACTION_FETCH_STATS.equals(action)) {
-                handleActionFetchStats(DataServiceHelper.getUserName(intent),
-                        DataServiceHelper.getPeriod(intent),
-                        DataServiceHelper.getStatsType(intent));
+            switch (action) {
+                case DataServiceHelper.ACTION_FETCH_USER_PROFILE:
+                    handleActionFetchUserProfile(DataServiceHelper.getUserName(intent));
+                    break;
+                case DataServiceHelper.ACTION_FETCH_STATS:
+                    handleActionFetchStats(DataServiceHelper.getUserName(intent),
+                            DataServiceHelper.getPeriod(intent),
+                            DataServiceHelper.getStatsType(intent));
+                    break;
             }
         }
     }
@@ -90,10 +83,10 @@ public class DataService extends IntentService {
 
         twitch.channelRx(username)
                 .doOnNext(twitchChannel1 ->
-                    cache.setObject(
-                            Build.key(TwitchChannel.class.getSimpleName(),username),
-                            twitchChannel1)
-                            .toBlocking().first()
+                        cache.setObject(
+                                Build.key(TwitchChannel.class.getSimpleName(), username),
+                                twitchChannel1)
+                                .toBlocking().first()
                 )
                 .toBlocking().subscribe(
                 twitchChannel -> {
@@ -111,7 +104,7 @@ public class DataService extends IntentService {
 
     }
 
-    private static final String GAME_BOX_ART_TEMPLATE  = "http://static-cdn.jtvnw.net/ttv-boxart/%s-136x190.jpg";
+    private static final String GAME_BOX_ART_TEMPLATE = "http://static-cdn.jtvnw.net/ttv-boxart/%s-136x190.jpg";
 
     /**
      * Handle action ACTION_FETCH_GAMES_STATS or ACTION_FETCH_CHANNELS_STATS
@@ -125,10 +118,9 @@ public class DataService extends IntentService {
 
         switch (type) {
             case GAME:
-                statsStream =  api.gamesStatsRx(username, period)
+                statsStream = api.gamesStatsRx(username, period)
                         .flatMap(Observable::from)
                         .observeOn(Schedulers.newThread())
-//                              .subscribeOn(AndroidSchedulers.mainThread())
                         .map(game ->
                                 new StatsItem(StatsItem.Type.GAME,
                                         game.game, game.game, String.format(GAME_BOX_ART_TEMPLATE,
@@ -136,41 +128,40 @@ public class DataService extends IntentService {
                         );
                 break;
             case CHANNEL:
-                    statsStream =   Observable.merge(
-                            api.channelsStatsRx(username, period)
-                                    .flatMap(Observable::from)
-                                    .observeOn(Schedulers.newThread())
-                                    .map(chan ->
+                statsStream = Observable.merge(
+                        api.channelsStatsRx(username, period)
+                                .flatMap(Observable::from)
+                                .observeOn(Schedulers.newThread())
+                                .map(chan ->
 
                                         cache.getObject(
                                                 Build.key(TwitchChannel.class.getSimpleName(), chan.channel),
                                                 DataServiceHelper.EXTRA_LONG_TTL,
                                                 TwitchChannel.class
                                         )
-                                        .onErrorResumeNext(
-                                                twitch.channelRx(chan.channel)
-                                                        .observeOn(Schedulers.newThread())
-                                                .onErrorReturn(throwable -> null)
-                                                        .doOnNext(twitchChannel -> {
-                                                            if (twitchChannel != null)
-                                                                cache.setObject(Build.key(
-                                                                        TwitchChannel.class.getSimpleName(),
-                                                                        chan.channel
-                                                                ), twitchChannel).toBlocking().first();
-                                                        }
+                                                .onErrorResumeNext(
+                                                        twitch.channelRx(chan.channel)
+                                                                .observeOn(Schedulers.newThread())
+                                                                .onErrorReturn(throwable -> null)
+                                                                .doOnNext(twitchChannel -> {
+                                                                            if (twitchChannel != null)
+                                                                                cache.setObject(Build.key(
+                                                                                        TwitchChannel.class.getSimpleName(),
+                                                                                        chan.channel
+                                                                                ), twitchChannel).toBlocking().first();
+                                                                        }
+                                                                )
                                                 )
-                                        )
-                                        .single().map(twitchChannel -> new StatsItem(StatsItem.Type.CHANNEL,
+                                                .single().map(twitchChannel -> new StatsItem(StatsItem.Type.CHANNEL,
                                                 chan.channel,
-                                                twitchChannel != null ? twitchChannel.display_name : chan.channel ,
+                                                twitchChannel != null ? twitchChannel.display_name : chan.channel,
                                                 twitchChannel != null ? twitchChannel.logo : null,
                                                 chan.duration))
 
-                                    ));
+                                ));
                 break;
             default:
-                // ensure statsStream != null
-                return;
+                return; // ensure statsStream != null
         }
 
         statsStream.toList()
@@ -198,7 +189,7 @@ public class DataService extends IntentService {
                             // TODO: Emmit error to UI
                             e.printStackTrace();
                             Log.e("DataService", "handleActionFetchStats", e);
-//                                    DataServiceHelper.replyUserStatsSuccess(receiver, username, type, period, stats);
+//                                    DataServiceHelper.replyUserStatsFailure(receiver, username, type, period, stats);
                         }
                 );
 

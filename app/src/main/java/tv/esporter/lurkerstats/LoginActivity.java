@@ -66,7 +66,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        mWebView =  (WebView)findViewById(R.id.login_web_view);
+        mWebView = (WebView) findViewById(R.id.login_web_view);
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         assert mWebView != null;
         mWebView.getSettings().setJavaScriptEnabled(true);
@@ -74,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
         mWebView.setVerticalScrollBarEnabled(false);
         mWebView.setBackgroundColor(Color.TRANSPARENT);
 
-        mWebView.setWebViewClient(new WebViewClient(){
+        mWebView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -92,7 +92,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        if (savedInstanceState != null){
+        if (savedInstanceState != null) {
             mWebView.restoreState(savedInstanceState);
             mState = savedInstanceState.getString(EXTRA_STATE);
             mCode = savedInstanceState.getString(EXTRA_CODE);
@@ -121,7 +121,7 @@ public class LoginActivity extends AppCompatActivity {
                 mWebView.setVisibility(View.GONE);
                 mProgressBar.setVisibility(View.VISIBLE);
 
-                String loginUrl = AUTH_URL+ mState;
+                String loginUrl = AUTH_URL + mState;
                 CookieManager cookieManager = CookieManager.getInstance();
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                     CookieSyncManager.createInstance(this);
@@ -141,7 +141,7 @@ public class LoginActivity extends AppCompatActivity {
                 mWebView.setVisibility(View.GONE);
                 mProgressBar.setVisibility(View.VISIBLE);
 
-                TwitchApi api = ApiHelper.getTwitchApi((String)null);
+                TwitchApi api = ApiHelper.getTwitchApi((String) null);
                 api.getTokenRx(CLIENT_ID, CLIENT_SECRET, AUTHORIZATION_CODE,
                         REDIRECT_URL, mCode, mState)
                         .subscribeOn(Schedulers.io())
@@ -150,16 +150,15 @@ public class LoginActivity extends AppCompatActivity {
                         .subscribe(tokenResponse -> {
                             sharedPref.edit()
                                     .putString(k_twitch_access_token,
-                                        tokenResponse.access_token)
+                                            tokenResponse.access_token)
                                     .putStringSet(k_twitch_scope,
-                                        new HashSet<>(Arrays.asList(tokenResponse.scope)))
-                            .commit();
-
+                                            new HashSet<>(Arrays.asList(tokenResponse.scope)))
+                                    .commit();
                             step(STEP_4);
 
                         }, throwable -> {
                             throwable.printStackTrace();
-                            Toast.makeText(context, throwable.getMessage(),Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, throwable.getMessage(), Toast.LENGTH_LONG).show();
                             step(STEP_1);
                         });
                 break;
@@ -180,12 +179,12 @@ public class LoginActivity extends AppCompatActivity {
                                                     twitchUser.name)
                                             .commit();
 
-                                    transision();
+                                    transition();
                                 }
                                 ,
                                 throwable -> {
                                     throwable.printStackTrace();
-                                    Toast.makeText(context, throwable.getMessage(),Toast.LENGTH_LONG).show();
+                                    Toast.makeText(context, throwable.getMessage(), Toast.LENGTH_LONG).show();
                                     step(STEP_1);
                                 }
                         );
@@ -194,7 +193,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void transision(){
+    private void transition() {
         Intent intent = new Intent(this, ViewerActivity.class);
         startActivity(intent);
         finish();
@@ -207,42 +206,6 @@ public class LoginActivity extends AppCompatActivity {
         outState.putString(EXTRA_STATE, mState);
         mWebView.saveState(outState);
     }
-
-//    /**
-//     * Shows the progress UI and hides the login form.
-//     */
-//    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-//    private void showProgress(final boolean show) {
-//        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-//        // for very easy animations. If available, use these APIs to fade-in
-//        // the progress spinner.
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-//            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-//
-//            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//            mLoginFormView.animate().setDuration(shortAnimTime).alpha(
-//                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
-//                @Override
-//                public void onAnimationEnd(Animator animation) {
-//                    mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//                }
-//            });
-//
-//            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//            mProgressView.animate().setDuration(shortAnimTime).alpha(
-//                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
-//                @Override
-//                public void onAnimationEnd(Animator animation) {
-//                    mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//                }
-//            });
-//        } else {
-//            // The ViewPropertyAnimator APIs are not available, so simply show
-//            // and hide the relevant UI components.
-//            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-//            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-//        }
-//    }
 
 }
 

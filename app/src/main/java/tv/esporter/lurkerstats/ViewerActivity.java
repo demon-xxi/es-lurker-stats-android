@@ -54,25 +54,18 @@ public class ViewerActivity extends AppCompatActivity {
     private static final String EXTRA_USERNAME = "tv.esporter.lurkerstats.extra.USERNAME";
     private static final String LOGOUT_INTENT = "tv.esporter.lurkerstats.intent.LOGOUT";
 
-//    private StatsListFragment mGamesFragment;
-//    private StatsListFragment mChannelsFragment;
-//    private DataServiceHelper mDataServiceHelper;
     private ActionBar ab;
     private String mUserName;
 
-//    Cache<TwitchChannel> channelCache;
-//    Cache<ArrayList<StatsItem>> statsCache;
-
-    private static final String PERIOD  = "currentmonth";
+    private static final String PERIOD = "currentmonth";
     private RxSnappyClient cache;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(">>>> ViewerActivity", "onCreate");
 
         // do these before restoring savedInstanceState
-        if (getIntent().hasExtra(EXTRA_USERNAME)){
+        if (getIntent().hasExtra(EXTRA_USERNAME)) {
             mUserName = getIntent().getStringExtra(EXTRA_USERNAME);
         } else {
             mUserName = getSharedPreferences(getString(R.string.kv_prefs), Context.MODE_PRIVATE)
@@ -87,21 +80,17 @@ public class ViewerActivity extends AppCompatActivity {
             finish();
         }
 
-
-//        setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         ab = getSupportActionBar();
-        if (ab != null){
+        if (ab != null) {
             ab.setDisplayShowHomeEnabled(true);
             ab.setDisplayHomeAsUpEnabled(getIntent().hasExtra(EXTRA_USERNAME));
             ab.setTitle(mUserName);
         }
-
-//        mDataServiceHelper = new DataServiceHelper(new Handler(), this);
 
         Bundle channelsBundle = new Bundle();
         channelsBundle.putSerializable(DataServiceHelper.EXTRA_STATS_TYPE, StatsItem.Type.CHANNEL);
@@ -120,14 +109,8 @@ public class ViewerActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
-        // hack way to get references to fragments
-//        mChannelsFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 0);
-//        mGamesFragment = (StatsListFragment) mFragmentPagerAdapter.instantiateItem(mViewPager, 1);
-
-
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
-
 
 
         IntentFilter filter = new IntentFilter(DataServiceHelper.EVENT_PROFILE_UPDATED);
@@ -136,7 +119,6 @@ public class ViewerActivity extends AppCompatActivity {
 
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, filter);
-
 
     }
 
@@ -150,28 +132,22 @@ public class ViewerActivity extends AppCompatActivity {
     }
 
 
-//    @Override
-//    protected void onPostResume() {
-//        Log.d(">>>> ViewerActivity", "onPostResume");
-//        super.onPostResume();
-//        loadUserProfile();
-//        loadStats(StatsItem.Type.CHANNEL, PERIOD);
-//        loadStats(StatsItem.Type.GAME, PERIOD);
-//    }
-
     // Our handler for received Intents.
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            switch (intent.getAction()){
+            switch (intent.getAction()) {
                 case DataServiceHelper.EVENT_PROFILE_UPDATED:
-                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName))
+                        return;
                     loadUserProfile();
                     break;
                 case DataServiceHelper.EVENT_STATS_UPDATED:
-                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName)) return;
-                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD)) return;
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_USERNAME).equals(mUserName))
+                        return;
+                    if (!intent.getStringExtra(DataServiceHelper.EXTRA_PERIOD).equals(PERIOD))
+                        return;
                     loadStats((StatsItem.Type) intent.getSerializableExtra(DataServiceHelper.EXTRA_STATS_TYPE),
                             PERIOD, false);
                     break;
@@ -192,6 +168,7 @@ public class ViewerActivity extends AppCompatActivity {
     public void loadStats(StatsItem.Type type, boolean force) {
         loadStats(type, PERIOD, force);
     }
+
     private void loadStats(StatsItem.Type type, String period, boolean force) {
         String key = Build.key(mUserName, type, period);
 
@@ -241,7 +218,7 @@ public class ViewerActivity extends AppCompatActivity {
                 TwitchChannel profile = cache.getObject(Build.key(TwitchChannel.class.getSimpleName(), mUserName),
                         TwitchChannel.class).toBlocking().first();
                 setProfile(profile);
-            } catch (MissingDataException e2){
+            } catch (MissingDataException e2) {
                 // ignoring
             }
         }
@@ -252,25 +229,6 @@ public class ViewerActivity extends AppCompatActivity {
     private void setProfile(TwitchChannel channel) {
         if (ab != null) ab.setTitle(channel.display_name);
     }
-
-
-//    @Override
-//    protected void onPause() {
-//        // Unregister since the activity is paused.
-//        LocalBroadcastManager.getInstance(this).unregisterReceiver(
-//                mMessageReceiver);
-//        super.onPause();
-//    }
-//
-//    @Override
-//    protected void onResume() {
-//        // Register to receive messages.
-//        // We are registering an observer (mMessageReceiver) to receive Intents
-//        // with actions named "custom-event-name".
-//        LocalBroadcastManager.getInstance(this).registerReceiver(
-//                mMessageReceiver, new IntentFilter("custom-event-name"));
-//        super.onResume();
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -285,7 +243,7 @@ public class ViewerActivity extends AppCompatActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
 
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.action_twitch_channel:
                 Integrator.openTwitchChannel(this, mUserName);
                 break;
@@ -298,8 +256,6 @@ public class ViewerActivity extends AppCompatActivity {
             case R.id.action_logout:
                 logout();
                 break;
-//            case R.id.action_settings:
-//                return true;
             case android.R.id.home:
                 this.finish();
                 return true;
@@ -316,7 +272,7 @@ public class ViewerActivity extends AppCompatActivity {
                 .remove(getString(R.string.k_twitch_access_token))
                 .remove(getString(R.string.k_twitch_username))
                 .remove(getString(R.string.k_twitch_scope))
-        .commit();
+                .commit();
 
         // broadcast logout for all activities
         Intent logoutintent = Build.intent(LOGOUT_INTENT).build();
@@ -343,40 +299,17 @@ public class ViewerActivity extends AppCompatActivity {
 
     }
 
-//    @Override
-//    public void onReceiveUserStatsResult(String username, StatsItem.Type type,
-//                                         String period, List<StatsItem> stats) {
-//        Log.i("UserStatsResult", username);
-//        switch (type) {
-//            case GAME:
-//                mGamesFragment.setData(stats);
-//                break;
-//            case CHANNEL:
-//                mChannelsFragment.setData(stats);
-//                break;
-//        }
-//    }
-
-
     private Map<StatsItem.Type, StatsListFragment> dataSubscribers = new HashMap<>();
+
     public void subscibeForData(StatsItem.Type type, StatsListFragment statsListFragment) {
         dataSubscribers.put(type, statsListFragment);
     }
 
     public void unSubscibeForData(StatsListFragment statsListFragment) {
-        for (Map.Entry e: dataSubscribers.entrySet()){
+        for (Map.Entry e : dataSubscribers.entrySet()) {
             if (e.getValue() != statsListFragment) continue;
             dataSubscribers.remove(e.getKey());
             break;
         }
     }
-
-//    @Override
-//    public void onReceiveUserProfileResult(String usernamee) {
-//        Log.d("ProfileResult", username);
-////        mToolbar.setTitle(profile.name);
-////        mToolbar.setLogo();
-////        mToolbar.setSubtitle(profile.name);
-//    }
-
 }
