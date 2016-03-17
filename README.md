@@ -4,6 +4,12 @@ Android client for [Lurker Insights](http://lurker.esporter.tv) website.
 
 Work in progress. See issues list for the roadmap.
 
+## About 
+Lurker Insights API keeps track of all the users watching Twitch channels. 
+It records time spent watching channels and games and exposes that statistics.
+
+Note: As of now streams with less than 1000 active viewers are not recorded.
+
 ## Building and Running
 Built using graddle with Android Studio 2.1. See [official documentation](http://developer.android.com/sdk/installing/studio-build.html) for details.
 
