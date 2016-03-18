@@ -1,4 +1,4 @@
-# Lurker Insights for Android [![Build Status](https://img.shields.io/travis/rust-lang/rust.svg?style=flat-square)](https://github.com/demon-xxi/es-lurker-stats-android)
+# Lurker Insights for Android [![Build Status](https://img.shields.io/travis/demon-xxi/es-lurker-stats-android.svg?style=flat-square)](https://travis-ci.org/demon-xxi/es-lurker-stats-android)
 
 Android client for [Lurker Insights](http://lurker.esporter.tv) website.
 
