@@ -7,7 +7,7 @@ install:
 
 script:
   # By default Travis-ci executes './gradlew build connectedCheck' if no 'script:' section found.
-  - ./gradlew cgeck
+  - ./gradlew check
 
 android:
   components:
