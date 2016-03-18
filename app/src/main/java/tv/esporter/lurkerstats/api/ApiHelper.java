@@ -29,7 +29,7 @@ public class ApiHelper {
         dispatcher.setMaxRequestsPerHost(dispatcher.getMaxRequests()); //default 64
 
         HttpLoggingInterceptor logger = new HttpLoggingInterceptor();
-        logger.setLevel(HttpLoggingInterceptor.Level.HEADERS);
+        logger.setLevel(HttpLoggingInterceptor.Level.BASIC);
 
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder();

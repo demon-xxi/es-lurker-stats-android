@@ -1,5 +1,6 @@
 package tv.esporter.lurkerstats;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -61,6 +62,7 @@ public class LoginActivity extends AppCompatActivity {
     private String mCode;
     private ProgressBar mProgressBar;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -153,7 +155,7 @@ public class LoginActivity extends AppCompatActivity {
                                             tokenResponse.access_token)
                                     .putStringSet(k_twitch_scope,
                                             new HashSet<>(Arrays.asList(tokenResponse.scope)))
-                                    .commit();
+                                    .apply();
                             step(STEP_4);
 
                         }, throwable -> {
@@ -177,7 +179,7 @@ public class LoginActivity extends AppCompatActivity {
                                     sharedPref.edit()
                                             .putString(k_twitch_username,
                                                     twitchUser.name)
-                                            .commit();
+                                            .apply();
 
                                     transition();
                                 }

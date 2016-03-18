@@ -35,42 +35,6 @@ public class StatsItem implements Parcelable {
         GAME, CHANNEL
     }
 
-
-    /**
-     * An array of sample (dummy) items.
-     */
-    public static final List<StatsItem> GAMES = new ArrayList<>();
-    public static final List<StatsItem> CHANNELS = new ArrayList<>();
-
-    private static final int COUNT = 25;
-
-    static {
-        Random rand = new Random();
-        // Add some sample items.
-        for (int i = 1; i <= COUNT; i++) {
-            long hrs = rand.nextInt(100);
-            GAMES.add(new StatsItem(
-                    Type.GAME,
-                    String.format("Game %d", i),
-                    String.format("Game %d", i),
-                    "http://static-cdn.jtvnw.net/ttv-boxart/Stardew%20Valley-272x380.jpg",
-                    hrs
-            ));
-        }
-
-        for (int i = 1; i <= COUNT; i++) {
-            long hrs = rand.nextInt(100);
-            CHANNELS.add(new StatsItem(
-                    Type.CHANNEL,
-                    String.format("Channel %d", i),
-                    String.format("Channel %d", i),
-                    "http://static-cdn.jtvnw.net/jtv_user_pictures/lirik-profile_image-b3ff7b706b3de124-300x300.png",
-                    hrs
-            ));
-        }
-    }
-
-
     @Override
     public String toString() {
         return String.format("%s (%s)", type, name);
@@ -83,8 +47,7 @@ public class StatsItem implements Parcelable {
 
         StatsItem statsItem = (StatsItem) o;
 
-        if (name != null ? !name.equals(statsItem.name) : statsItem.name != null) return false;
-        return type == statsItem.type;
+        return name != null ? name.equals(statsItem.name) : statsItem.name == null && type == statsItem.type;
 
     }
 

@@ -272,7 +272,7 @@ public class ViewerActivity extends AppCompatActivity {
                 .remove(getString(R.string.k_twitch_access_token))
                 .remove(getString(R.string.k_twitch_username))
                 .remove(getString(R.string.k_twitch_scope))
-                .commit();
+                .apply();
 
         // broadcast logout for all activities
         Intent logoutintent = Build.intent(LOGOUT_INTENT).build();
