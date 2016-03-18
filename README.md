@@ -1,4 +1,4 @@
-# Lurker Insights for Android
+# Lurker Insights for Android [![Build Status](https://travis-ci.org/demon-xxi/es-lurker-stats-android.svg?branch=master)](https://travis-ci.org/demon-xxi/es-lurker-stats-android)
 
 Android client for [Lurker Insights](http://lurker.esporter.tv) website.
 
