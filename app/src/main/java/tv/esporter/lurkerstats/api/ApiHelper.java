@@ -2,6 +2,7 @@ package tv.esporter.lurkerstats.api;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 
 import com.squareup.moshi.Moshi;
 import com.squareup.moshi.Rfc3339DateJsonAdapter;
@@ -23,6 +24,7 @@ public class ApiHelper {
     private static final String BEARER = "Bearer";
     private static final String OAUTH = "OAuth";
 
+    @NonNull
     static Retrofit getRetrofitApi(final String baseUrl, final String token, final String auth){
 
         Dispatcher dispatcher = new Dispatcher();
@@ -46,14 +48,12 @@ public class ApiHelper {
                 .add(Date.class, new Rfc3339DateJsonAdapter())
                 .build();
 
-        Retrofit retrofit = new Retrofit.Builder()
+        return new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(httpClient)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .build();
-
-        return retrofit;
     }
 
     private static final String STATS_API_BASE = "http://lurker.esporter.tv/api/";

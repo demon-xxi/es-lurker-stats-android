@@ -1,4 +1,14 @@
 language: android
+
+install:
+  # Check install section: http://docs.travis-ci.com/user/build-configuration/#install
+  # If you'd like to skip the install stage entirely, set it to true and nothing will be run.
+  - true
+
+script:
+  # By default Travis-ci executes './gradlew build connectedCheck' if no 'script:' section found.
+  - ./gradlew cgeck
+
 android:
   components:
     - tools
@@ -12,3 +22,10 @@ before_install:
 
 jdk:
   - oraclejdk8
+
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/

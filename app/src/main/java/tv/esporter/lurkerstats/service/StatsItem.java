@@ -3,14 +3,6 @@ package tv.esporter.lurkerstats.service;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-/**
- * Created by Sergey on 3/12/2016.
- *
- */
 public class StatsItem implements Parcelable {
 
     public String name;
